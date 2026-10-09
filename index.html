@@ -94,7 +94,7 @@
             gap: 16px;
         }
 
-        /* ================= 移动端原生优化：双层毛玻璃顶栏 ================= */
+        /* 移动端双层毛玻璃导航 */
         .glass-nav-wrapper {
             position: sticky;
             top: 0;
@@ -120,7 +120,6 @@
             transition: var(--transition-smooth);
         }
 
-        /* 顶栏第一行：品牌、状态点、外观切换、连接按钮 */
         .nav-top-row {
             display: flex;
             justify-content: space-between;
@@ -217,7 +216,6 @@
             border: 1px solid rgba(52, 199, 89, 0.3);
         }
 
-        /* 顶栏第二行：均分式 iOS 分段控制器 */
         .nav-segments-track {
             display: flex;
             background: var(--fill-secondary);
@@ -247,7 +245,7 @@
             font-weight: 600;
         }
 
-        /* ================= 核心视口与卡片 ================= */
+        /* 核心视口与卡片 */
         .view-content {
             display: flex;
             flex-direction: column;
@@ -368,7 +366,6 @@
         <!-- 原生级双层毛玻璃导航 -->
         <header class="glass-nav-wrapper">
             <nav class="glass-nav-card">
-                <!-- 第一行：状态信息与主操作 -->
                 <div class="nav-top-row">
                     <div class="nav-brand-group">
                         <span class="nav-brand-title">DNA 60</span>
@@ -388,7 +385,6 @@
                     </div>
                 </div>
 
-                <!-- 第二行：分段控制器（均分宽度） -->
                 <div class="nav-segments-track">
                     <button class="nav-tab-btn active" id="tab-btn-dash">实时</button>
                     <button class="nav-tab-btn" id="tab-btn-devices">设备</button>
@@ -444,14 +440,15 @@
                     </div>
                 </div>
 
+                <!-- 替换后的统计栅格：总放电能耗 -> 周期平均时间 (s/口) -->
                 <div class="metrics-grid">
                     <div class="metric-cell">
                         <div class="metric-cell-val" id="filter-puffs">0</div>
                         <div class="metric-cell-label">总抽吸 (口)</div>
                     </div>
                     <div class="metric-cell">
-                        <div class="metric-cell-val" id="filter-energy">0.00</div>
-                        <div class="metric-cell-label">总放电能耗 (Wh)</div>
+                        <div class="metric-cell-val" id="filter-avg-time">--</div>
+                        <div class="metric-cell-label">平均时间 (s/口)</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-cell-val" id="filter-rate">--</div>
@@ -560,7 +557,6 @@
     </div>
 
     <script>
-        /* ================= 解决 iOS Bluefy 报错的标准 128 位 UUID 字符串 ================= */
         const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
         const CHAR_UUID    = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
@@ -605,7 +601,7 @@
         initTheme();
         initDefaultAtos();
 
-        /* ================= 2. 标签页切换与移动端左右滑动手势 ================= */
+        /* ================= 2. 标签页切换与移动端左右滑动 ================= */
         const tabs = ['dash', 'devices', 'atos', 'ota'];
         let activeTabIdx = 0;
 
@@ -627,7 +623,6 @@
             if (target === 'atos') renderAtomizerLibrary();
         }
 
-        // 移动端左右滑动识别
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
@@ -675,7 +670,7 @@
             renderFilteredMetrics();
         });
 
-        /* ================= 3. Web Bluetooth 严格串行通信 ================= */
+        /* ================= 3. Web Bluetooth 通信 ================= */
         const btnConn = document.getElementById('btn-conn');
         const statusDot = document.getElementById('nav-status-dot');
         const statusText = document.getElementById('nav-status-text');
@@ -692,7 +687,6 @@
 
         btnConn.addEventListener('click', async () => {
             try {
-                // 严格传递标准 128 位 UUID 字符串，杜绝 Bluefy 解析崩溃
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'DNA60-Sync' }],
                     optionalServices: [SERVICE_UUID]
@@ -763,7 +757,7 @@
             }
         }
 
-        /* ================= 4. 双向 Flash 状态同步与报文解析 ================= */
+        /* ================= 4. 双向状态同步与增量解析 ================= */
         async function pushSystemStateToHardware() {
             if (!bleChar) return;
             const payload = JSON.stringify({ reg: registry, atos: atomizers, map: devAtoMap });
@@ -862,10 +856,21 @@
             const recTime = data.ts || Date.now();
             let deltaPuffs = 0;
             let deltaEnergyWh = 0;
+            let deltaTimeSec = 0;
 
-            if (lastRec && lastRec.chip_id === data.chipId) {
-                deltaPuffs = (data.dev.p >= lastRec.devPuffs) ? (data.dev.p - lastRec.devPuffs) : data.puffs;
-                deltaEnergyWh = Math.max(0, (data.dev.e - lastRec.devEnergyMwh) / 1000.0);
+            // 查找该硬件芯片上一笔同步底账，用于准确计算增量单口时长与能量
+            const lastDevRec = syncRecords.find(r => r.chip_id === data.chipId);
+
+            if (lastDevRec) {
+                deltaPuffs = (data.dev.p >= lastDevRec.devPuffs) ? (data.dev.p - lastDevRec.devPuffs) : data.puffs;
+                deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
+                if (lastDevRec.devTimeSec !== undefined && data.dev.t >= lastDevRec.devTimeSec) {
+                    deltaTimeSec = Math.max(0, data.dev.t - lastDevRec.devTimeSec);
+                } else if (deltaPuffs === 1 && data.last && data.last.t) {
+                    deltaTimeSec = data.last.t;
+                }
+            } else if (deltaPuffs === 1 && data.last && data.last.t) {
+                deltaTimeSec = data.last.t;
             }
 
             const targetAtoId = devAtoMap[data.chipId] || (atomizers[0]?.id);
@@ -880,8 +885,10 @@
                 puffs: data.puffs,
                 devPuffs: data.dev.p,
                 devEnergyMwh: data.dev.e,
+                devTimeSec: data.dev.t, // 存储出厂累计总秒数底账
                 deltaPuffs: deltaPuffs,
                 deltaEnergyWh: deltaEnergyWh,
+                deltaTimeSec: deltaTimeSec, // 本次同步区间内的实际点火总时长 (秒)
                 atomizer_id: targetAtoId
             };
 
@@ -913,32 +920,46 @@
 
             for (const cid in groups) {
                 groups[cid].sort((a, b) => ((a.ts || 0) * 1000) - ((b.ts || 0) * 1000));
-                let prevPuffs = 0, prevEnergy = 0;
+                let prevPuffs = 0, prevEnergy = 0, prevTime = 0;
                 groups[cid].forEach((item, index) => {
                     const syncId = Number(item.sync || item.sync_id) || 0;
                     const trueTs = (item.ts && Number(item.ts) > 100000000) ? (Number(item.ts) * 1000) : Date.now();
                     const devP = Array.isArray(item.dev) ? item.dev[0] : (item.dev?.p || 0);
                     const devE = Array.isArray(item.dev) ? item.dev[1] : (item.dev?.e || 0);
+                    const devT = Array.isArray(item.dev) ? item.dev[2] : (item.dev?.t || 0);
 
-                    let dP = 0, dE = 0;
+                    let dP = 0, dE = 0, dT = 0;
                     if (index > 0) {
                         dP = Math.max(0, devP - prevPuffs);
                         dE = Math.max(0, (devE - prevEnergy) / 1000.0);
+                        dT = Math.max(0, devT - prevTime);
                     }
-                    prevPuffs = devP; prevEnergy = devE;
+                    prevPuffs = devP; prevEnergy = devE; prevTime = devT;
 
                     const existIdx = syncRecords.findIndex(r => r.chip_id === cid && r.sync_id === syncId);
                     if (existIdx >= 0) {
                         syncRecords[existIdx].timestamp = trueTs;
                         syncRecords[existIdx].timeStr = formatDate(new Date(trueTs));
+                        syncRecords[existIdx].devPuffs = devP;
+                        syncRecords[existIdx].devEnergyMwh = devE;
+                        syncRecords[existIdx].devTimeSec = devT;
                         syncRecords[existIdx].deltaPuffs = dP;
                         syncRecords[existIdx].deltaEnergyWh = dE;
+                        syncRecords[existIdx].deltaTimeSec = dT;
                     } else {
                         syncRecords.push({
                             id: 'rec_' + trueTs + '_' + syncId,
-                            sync_id: syncId, chip_id: cid, timestamp: trueTs,
-                            timeStr: formatDate(new Date(trueTs)), puffs: Number(item.puffs) || 0,
-                            devPuffs: devP, devEnergyMwh: devE, deltaPuffs: dP, deltaEnergyWh: dE,
+                            sync_id: syncId,
+                            chip_id: cid,
+                            timestamp: trueTs,
+                            timeStr: formatDate(new Date(trueTs)),
+                            puffs: Number(item.puffs) || 0,
+                            devPuffs: devP,
+                            devEnergyMwh: devE,
+                            devTimeSec: devT,
+                            deltaPuffs: dP,
+                            deltaEnergyWh: dE,
+                            deltaTimeSec: dT,
                             atomizer_id: devAtoMap[cid] || atomizers[0]?.id
                         });
                     }
@@ -1274,19 +1295,25 @@
             alert('固件推送完成！ESP32 正在自动切换分区并重启。');
         });
 
-        /* ================= 9. 数据聚合与持久化工具 ================= */
+        /* ================= 9. 数据聚合与周期平均时间计算 ================= */
         function renderFilteredMetrics() {
             const bounds = getTimeBounds(currentFilterRange);
             const filtered = syncRecords.filter(r => r.timestamp >= bounds.start && r.timestamp <= bounds.end);
 
-            let totalPuffs = 0, totalEnergyWh = 0;
+            let totalPuffs = 0;
+            let totalTimeSec = 0;
+
             filtered.forEach(r => {
                 totalPuffs += Number(r.deltaPuffs) || 0;
-                totalEnergyWh += Number(r.deltaEnergyWh) || 0;
+                totalTimeSec += Number(r.deltaTimeSec) || 0;
             });
 
             document.getElementById('filter-puffs').textContent = totalPuffs.toLocaleString();
-            document.getElementById('filter-energy').textContent = totalEnergyWh.toFixed(2);
+
+            // 严格基于当前所选周期内的点火总秒数除以总口数计算周期均值
+            const avgTimeStr = (totalPuffs > 0 && totalTimeSec > 0) ? (totalTimeSec / totalPuffs).toFixed(2) : '--';
+            document.getElementById('filter-avg-time').textContent = avgTimeStr;
+
             document.getElementById('filter-sync-count').textContent = filtered.length.toLocaleString();
 
             const now = new Date();
