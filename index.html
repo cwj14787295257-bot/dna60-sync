@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>DNA 60 Control Center</title>
+    <style>
+        :root {
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --apple-blue: #0071e3;
+            --apple-blue-hover: #0077ed;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+            --apple-red-bg: rgba(255, 59, 48, 0.08);
+            --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 浅色模式 (Apple 极简灰白) */
+        html[data-theme="light"],
+        html[data-theme="auto"] {
+            --bg: #f5f5f7;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-solid: #ffffff;
+            --nav-bg: rgba(245, 245, 247, 0.75);
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-hover: rgba(0, 0, 0, 0.14);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #a1a1a6;
+            --fill-secondary: rgba(0, 0, 0, 0.035);
+            --fill-tertiary: rgba(0, 0, 0, 0.06);
+            --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.04);
+            --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.05);
+            --modal-bg: rgba(255, 255, 255, 0.96);
+            --modal-overlay: rgba(0, 0, 0, 0.25);
+        }
+
+        /* 深色模式 (Apple 深邃黑) */
+        html[data-theme="dark"] {
+            --bg: #000000;
+            --card-bg: rgba(28, 28, 30, 0.82);
+            --card-solid: #1c1c1e;
+            --nav-bg: rgba(0, 0, 0, 0.75);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --text-tertiary: #636366;
+            --fill-secondary: rgba(255, 255, 255, 0.05);
+            --fill-tertiary: rgba(255, 255, 255, 0.09);
+            --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+            --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
+            --modal-bg: rgba(28, 28, 30, 0.96);
+            --modal-overlay: rgba(0, 0, 0, 0.65);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html[data-theme="auto"] {
+                --bg: #000000;
+                --card-bg: rgba(28, 28, 30, 0.82);
+                --card-solid: #1c1c1e;
+                --nav-bg: rgba(0, 0, 0, 0.75);
+                --border-subtle: rgba(255, 255, 255, 0.08);
+                --border-hover: rgba(255, 255, 255, 0.18);
+                --text-primary: #f5f5f7;
+                --text-secondary: #86868b;
+                --text-tertiary: #636366;
+                --fill-secondary: rgba(255, 255, 255, 0.05);
+                --fill-tertiary: rgba(255, 255, 255, 0.09);
+                --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+                --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
+                --modal-bg: rgba(28, 28, 30, 0.96);
+                --modal-overlay: rgba(0, 0, 0, 0.65);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-stack); -webkit-font-smoothing: antialiased; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 0 16px 48px 16px;
+            touch-action: pan-y;
+        }
+
+        .landing-container { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 20px; }
+
+        /* 悬浮毛玻璃导航 */
+        .glass-nav-wrapper { position: sticky; top: 14px; z-index: 100; margin-bottom: 4px; }
+        .glass-nav {
+            background: var(--nav-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 980px;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-subtle);
+            transition: var(--transition-smooth);
+        }
+
+        .nav-segments { display: flex; gap: 2px; background: var(--fill-secondary); padding: 3px; border-radius: 980px; }
+        .nav-tab-btn {
+            background: none; border: none; color: var(--text-secondary); font-size: 13px; font-weight: 500;
+            padding: 6px 13px; border-radius: 980px; cursor: pointer; transition: var(--transition-smooth); user-select: none;
+        }
+        .nav-tab-btn.active {
+            background: var(--card-solid); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight: 600;
+        }
+
+        .nav-right-actions { display: flex; align-items: center; gap: 8px; }
+        .theme-switch-pill { display: flex; background: var(--fill-secondary); padding: 3px; border-radius: 980px; gap: 2px; }
+        .theme-opt-btn {
+            background: none; border: none; color: var(--text-secondary); padding: 5px 8px; border-radius: 980px;
+            cursor: pointer; font-size: 11px; font-weight: 500; transition: var(--transition-smooth);
+        }
+        .theme-opt-btn.active { background: var(--card-solid); color: var(--text-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.08); font-weight: 600; }
+
+        .btn-connect {
+            background: var(--apple-blue); color: #ffffff; border: none; padding: 7px 16px; border-radius: 980px;
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+        }
+        .btn-connect:hover { background: var(--apple-blue-hover); transform: scale(1.02); }
+        .btn-connect.connected { background: var(--fill-tertiary); color: var(--apple-green); border: 1px solid rgba(52, 199, 89, 0.25); }
+
+        /* 内容视口 */
+        .view-content { display: flex; flex-direction: column; gap: 16px; animation: viewFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .view-content.hidden { display: none; }
+
+        @keyframes viewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .apple-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: var(--transition-smooth);
+        }
+        .apple-card:hover { border-color: var(--border-hover); }
+
+        .card-label-subtle { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); font-weight: 600; }
+        .hero-device-header { display: flex; justify-content: space-between; align-items: center; }
+        .device-headline { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
+
+        .action-link { color: var(--apple-blue); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; }
+        .action-link:hover { opacity: 0.7; }
+
+        .mounted-ato-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+            border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .apple-select {
+            background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
+            padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 500; outline: none; cursor: pointer;
+        }
+
+        .coil-shelf { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2px; }
+        .coil-puffs-huge { font-size: 42px; font-weight: 800; letter-spacing: -0.035em; color: var(--text-primary); line-height: 1; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .coil-puffs-unit { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-left: 4px; }
+
+        .apple-btn {
+            background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
+            padding: 8px 16px; border-radius: 980px; font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition-smooth);
+        }
+        .apple-btn:hover { background: var(--fill-tertiary); transform: scale(0.99); }
+        .apple-btn-primary { background: var(--apple-blue); color: #ffffff; border: none; font-weight: 600; }
+        .apple-btn-primary:hover { background: var(--apple-blue-hover); }
+        .apple-btn-destructive { background: var(--apple-red-bg); color: var(--apple-red); border: 1px solid rgba(255, 59, 48, 0.15); }
+        .apple-btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        .apple-btn-field {
+            background: var(--apple-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 0 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .apple-btn-field:hover { background: var(--apple-blue-hover); transform: scale(0.99); }
+        .apple-btn-field:active { transform: scale(0.96); }
+
+        .sync-toast {
+            background: var(--card-bg); border: 1px solid var(--border-subtle); border-left: 4px solid var(--apple-blue);
+            border-radius: 14px; padding: 12px 16px; display: none; justify-content: space-between; align-items: center; font-size: 13px;
+        }
+        .sync-toast.active { display: flex; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .metric-cell { background: var(--fill-secondary); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .metric-cell-val { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .metric-cell-label { font-size: 12px; color: var(--text-secondary); }
+
+        .asset-card { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+        .asset-card.active-chip { border-color: rgba(0, 113, 227, 0.45); box-shadow: 0 0 0 1px rgba(0, 113, 227, 0.15); }
+        .asset-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .asset-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .apple-pill-tag { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 980px; background: var(--fill-secondary); color: var(--text-secondary); }
+        .apple-pill-tag.online { background: rgba(52, 199, 89, 0.12); color: var(--apple-green); }
+        .asset-stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--fill-secondary); padding: 10px 14px; border-radius: 14px; }
+        .asset-actions-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 4px; font-size: 12px; color: var(--text-secondary); }
+
+        .timeline-scroll { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .timeline-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--fill-secondary); border-radius: 12px; font-size: 12px; }
+
+        /* 模态弹窗 */
+        .apple-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
+        }
+        .apple-modal-overlay.active { display: flex; }
+        .apple-modal-window {
+            background: var(--modal-bg); border: 1px solid var(--border-subtle); border-radius: 24px; padding: 24px;
+            width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 16px;
+        }
+        .apple-input {
+            background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
+            padding: 10px 14px; border-radius: 12px; font-size: 14px; outline: none; width: 100%;
+        }
+        .param-detail-line { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+
+        /* 固件进度条 */
+        .progress-bar-wrap { background: var(--fill-secondary); border-radius: 980px; height: 8px; width: 100%; overflow: hidden; margin-top: 6px; }
+        .progress-bar-fill { background: var(--apple-blue); height: 100%; width: 0%; transition: width 0.15s ease; }
+    </style>
+</head>
+<body>
+    <div class="landing-container">
+        <!-- 悬浮毛玻璃导航 -->
+        <div class="glass-nav-wrapper">
+            <nav class="glass-nav">
+                <div class="nav-segments">
+                    <button class="nav-tab-btn active" id="tab-btn-dash">实时</button>
+                    <button class="nav-tab-btn" id="tab-btn-devices">设备</button>
+                    <button class="nav-tab-btn" id="tab-btn-atos">雾化器</button>
+                    <button class="nav-tab-btn" id="tab-btn-ota">固件</button>
+                </div>
+
+                <div class="nav-right-actions">
+                    <div class="theme-switch-pill" title="切换外观风格">
+                        <button class="theme-opt-btn" data-set-theme="light">浅色</button>
+                        <button class="theme-opt-btn" data-set-theme="auto">自动</button>
+                        <button class="theme-opt-btn" data-set-theme="dark">深色</button>
+                    </div>
+                    <button id="btn-conn" class="btn-connect">连接</button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- 视图 1: 实时面板 -->
+        <main class="view-content" id="view-dashboard">
+            <div class="apple-card">
+                <div class="hero-device-header">
+                    <span class="card-label-subtle">Active Hardware</span>
+                    <span class="action-link" id="btn-rename-dev" style="display:none;">重命名</span>
+                </div>
+
+                <div class="device-headline">
+                    <span id="disp-dev-name">等待连接设备...</span>
+                </div>
+
+                <div class="mounted-ato-row">
+                    <span style="font-size: 13px; color: var(--text-secondary);">搭载雾化器</span>
+                    <select id="select-active-ato" class="apple-select" style="min-width: 150px;"></select>
+                </div>
+
+                <div class="coil-shelf">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary);" id="disp-coil-spec">线圈: --</div>
+                        <div style="margin-top: 4px;">
+                            <span class="coil-puffs-huge" id="disp-coil-puffs">0</span>
+                            <span class="coil-puffs-unit">口</span>
+                        </div>
+                    </div>
+                    <button class="apple-btn apple-btn-sm" id="btn-reset-coil">换丝清零</button>
+                </div>
+            </div>
+
+            <!-- 同步增量提醒条 (已直接挂载对应雾化器名称) -->
+            <div class="sync-toast" id="attr-banner">
+                <div>本次同步 <strong id="attr-delta" style="color:var(--apple-blue);">+0 口</strong> 已记入 <strong id="attr-ato-name" style="color:var(--text-primary);">默认雾化器</strong></div>
+                <span class="action-link" id="btn-reassign">更改归属</span>
+            </div>
+
+            <div class="apple-card">
+                <div class="hero-device-header">
+                    <span class="card-label-subtle">Usage Analytics</span>
+                    <div class="nav-segments" id="filter-tabs-container">
+                        <button class="nav-tab-btn active" data-range="day">今日</button>
+                        <button class="nav-tab-btn" data-range="week">本周</button>
+                        <button class="nav-tab-btn" data-range="month">本月</button>
+                        <button class="nav-tab-btn" data-range="all">全部</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="filter-puffs">0</div>
+                        <div class="metric-cell-label">总抽吸 (口)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="filter-energy">0.00</div>
+                        <div class="metric-cell-label">总放电能耗 (Wh)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="filter-rate">--</div>
+                        <div class="metric-cell-label">日均频次 (口/天)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="filter-sync-count">0</div>
+                        <div class="metric-cell-label">同步记录次数</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="apple-card">
+                <div class="hero-device-header">
+                    <span class="card-label-subtle">Activity Timeline</span>
+                    <span id="log-count" style="font-size: 12px; color: var(--text-secondary);">0 笔记录</span>
+                </div>
+                <div class="timeline-scroll" id="log-list">
+                    <div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 18px;">暂无同步记录</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 视图 2: 设备档案 -->
+        <main class="view-content hidden" id="view-devices">
+            <div style="padding: 4px 6px;">
+                <h2 style="font-size: 20px; font-weight: 700;">已注册设备</h2>
+            </div>
+            <div id="devices-list-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </main>
+
+        <!-- 视图 3: 雾化器档案 -->
+        <main class="view-content hidden" id="view-atomizers">
+            <div class="apple-card" style="padding: 16px 20px;">
+                <span class="card-label-subtle">New Atomizer</span>
+                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <input type="text" id="input-new-ato-name" class="apple-input" placeholder="雾化器名称 (如 Paravozz 10.1)">
+                    <button class="apple-btn-field" id="btn-create-ato">添加</button>
+                </div>
+            </div>
+            <div id="atomizers-list-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </main>
+
+        <!-- 视图 4: 固件管理 (OTA) -->
+        <main class="view-content hidden" id="view-ota">
+            <div class="apple-card">
+                <span class="card-label-subtle">Firmware Management</span>
+                <h2 style="font-size: 20px; font-weight: 700;">无线固件升级</h2>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                    本设备采用 A/B 双分区无缝容灾。升级期间保持蓝牙连接，固件校验完成后芯片将自动切换分区并重启。
+                </p>
+
+                <div style="background: var(--fill-secondary); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+                    <input type="file" id="file-ota" accept=".bin" style="font-size: 13px;">
+                    <div id="ota-status-text" style="font-size: 12px; color: var(--text-secondary);">等待选择固件 (.bin)</div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" id="ota-progress-bar"></div>
+                    </div>
+                </div>
+
+                <button class="apple-btn apple-btn-primary" id="btn-start-ota" style="width: 100%;">开始无线推送固件</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 弹窗 1: 主板历史数据快照 -->
+    <div class="apple-modal-overlay" id="modal-lifetime">
+        <div class="apple-modal-window">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 17px; font-weight: 700;">DNA 60 历史数据</h3>
+                <span class="action-link" id="btn-close-lifetime">完成</span>
+            </div>
+            <div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">硬件序列号</span><span id="lt-chip-id" style="font-family:monospace; font-size:12px;">--</span></div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">主板终生总口数</span><span id="lt-dev-puffs" style="font-weight:700;">-- 口</span></div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">终生点火总时间</span><span id="lt-dev-time">--</span></div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">终生总放电能量</span><span id="lt-dev-energy">-- Wh</span></div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">历史平均功率</span><span id="lt-mean-power">-- W</span></div>
+                <div class="param-detail-line"><span style="color:var(--text-secondary);">历史平均单口时长</span><span id="lt-mean-time">-- s</span></div>
+            </div>
+            <button class="apple-btn" id="btn-dump-from-modal" style="width:100%; margin-top: 4px;">从板载Flash拉取备份</button>
+        </div>
+    </div>
+
+    <!-- 弹窗 2: 新芯片自命名 -->
+    <div class="apple-modal-overlay" id="modal-naming">
+        <div class="apple-modal-window">
+            <h3 style="font-size: 17px; font-weight: 700;">发现全新硬件</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);">检测到尚未绑定的 DNA 60 主板，请为其指定名称：</p>
+            <input type="text" id="input-dev-name" class="apple-input" placeholder="设备名称 (如 Billet Box, S61)">
+            <button class="apple-btn apple-btn-primary" id="btn-save-dev-name" style="width: 100%;">保存并绑定</button>
+        </div>
+    </div>
+
+    <!-- 弹窗 3: 归属更正 -->
+    <div class="apple-modal-overlay" id="modal-reassign">
+        <div class="apple-modal-window">
+            <h3 style="font-size: 17px; font-weight: 700;">更正本次同步口数归属</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);">将刚才同步的这笔口数转移到实际使用的雾化器：</p>
+            <select id="select-reassign-target" class="apple-select" style="width: 100%;"></select>
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                <button class="apple-btn" style="flex:1;" id="btn-close-reassign">取消</button>
+                <button class="apple-btn apple-btn-primary" style="flex:1;" id="btn-confirm-reassign">确认转移</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = 0xffe0;
+        const CHAR_UUID = 0xffe1;
+
+        const K_REGISTRY = 'dna60_reg_v4';
+        const K_ATOS     = 'dna60_atos_v4';
+        const K_RECORDS  = 'dna60_recs_v4';
+        const K_DEV_ATO  = 'dna60_dev_ato_map_v4';
+        const K_THEME    = 'dna60_theme_pref';
+
+        let registry = JSON.parse(localStorage.getItem(K_REGISTRY) || '{}');
+        let atomizers = JSON.parse(localStorage.getItem(K_ATOS) || '[]');
+        let syncRecords = JSON.parse(localStorage.getItem(K_RECORDS) || '[]');
+        let devAtoMap = JSON.parse(localStorage.getItem(K_DEV_ATO) || '{}');
+
+        let activeChipId = null;
+        let lastLiveSnapshot = null;
+        let bleChar = null;
+        let currentFilterRange = 'day';
+        let pendingPayload = null;
+
+        let isDumping = false;
+        let dumpBuffer = [];
+        let incomingCfgBuffer = [];
+
+        /* ================= 1. 三态主题系统 ================= */
+        function initTheme() {
+            const savedTheme = localStorage.getItem(K_THEME) || 'auto';
+            applyTheme(savedTheme);
+            document.querySelectorAll('[data-set-theme]').forEach(btn => {
+                btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-set-theme')));
+            });
+        }
+
+        function applyTheme(mode) {
+            document.documentElement.setAttribute('data-theme', mode);
+            localStorage.setItem(K_THEME, mode);
+            document.querySelectorAll('[data-set-theme]').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-set-theme') === mode);
+            });
+        }
+
+        initTheme();
+        initDefaultAtos();
+
+        /* ================= 2. 标签页切换与移动端左右滑动手势 ================= */
+        const tabs = ['dash', 'devices', 'atos', 'ota'];
+        let activeTabIdx = 0;
+
+        tabs.forEach((t, idx) => {
+            document.getElementById(`tab-btn-${t}`).addEventListener('click', () => switchView(t));
+        });
+
+        function switchView(target) {
+            const idx = tabs.indexOf(target);
+            if (idx >= 0) activeTabIdx = idx;
+
+            tabs.forEach(t => {
+                document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === target);
+                const el = document.getElementById(t === 'dash' ? 'view-dashboard' : (t === 'devices' ? 'view-devices' : (t === 'atos' ? 'view-atomizers' : 'view-ota')));
+                el.classList.toggle('hidden', t !== target);
+            });
+            if (target === 'dash') renderDashboard();
+            if (target === 'devices') renderDeviceLibrary();
+            if (target === 'atos') renderAtomizerLibrary();
+        }
+
+        // 移动端左右滑动识别逻辑 (Touch Swipe)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.apple-modal-overlay') || e.target.closest('input') || e.target.closest('select')) {
+                touchStartX = 0;
+                touchStartY = 0;
+                return;
+            }
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            if (!touchStartX && !touchStartY) return;
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleTouchSwipe();
+        }, { passive: true });
+
+        function handleTouchSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 55;
+
+            if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+                if (deltaX < 0) {
+                    if (activeTabIdx < tabs.length - 1) {
+                        switchView(tabs[activeTabIdx + 1]);
+                    }
+                } else {
+                    if (activeTabIdx > 0) {
+                        switchView(tabs[activeTabIdx - 1]);
+                    }
+                }
+            }
+            touchStartX = 0;
+            touchStartY = 0;
+        }
+
+        document.getElementById('filter-tabs-container').addEventListener('click', (e) => {
+            const tab = e.target.closest('.nav-tab-btn');
+            if (!tab) return;
+            document.querySelectorAll('#filter-tabs-container .nav-tab-btn').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilterRange = tab.getAttribute('data-range') || 'day';
+            renderFilteredMetrics();
+        });
+
+        /* ================= 3. Web Bluetooth 严格串行通信 ================= */
+        const btnConn = document.getElementById('btn-conn');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderDashboard();
+            if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+                try {
+                    const devices = await navigator.bluetooth.getDevices();
+                    if (devices.length > 0) setupGattConnection(devices[0]);
+                } catch (e) {}
+            }
+        });
+
+        btnConn.addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'DNA60-Sync' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+                setupGattConnection(device);
+            } catch (err) {}
+        });
+
+        async function setupGattConnection(device) {
+            device.addEventListener('gattserverdisconnected', () => {
+                btnConn.textContent = '连接';
+                btnConn.classList.remove('connected');
+                bleChar = null;
+                activeChipId = null;
+                renderDashboard();
+            });
+
+            btnConn.textContent = '连接中...';
+            const server = await device.gatt.connect();
+            btnConn.textContent = '已连接';
+            btnConn.classList.add('connected');
+
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            bleChar = await service.getCharacteristic(CHAR_UUID);
+
+            try {
+                await bleChar.startNotifications();
+                bleChar.addEventListener('characteristicvaluechanged', (e) => {
+                    handleIncomingPayload(new TextDecoder().decode(e.target.value));
+                });
+            } catch (err) {}
+
+            try {
+                const initVal = await bleChar.readValue();
+                handleIncomingPayload(new TextDecoder().decode(initVal));
+            } catch (e) {}
+
+            const unixSec = Math.floor(Date.now() / 1000);
+            await sendBleCommand({ cmd: "TIME", ts: unixSec });
+            await sendBleCommand({ cmd: "GET_CFG" });
+
+            let isPolling = false;
+            setInterval(async () => {
+                if (bleChar && device.gatt.connected && !isPolling && !isDumping) {
+                    isPolling = true;
+                    try {
+                        const v = await bleChar.readValue();
+                        handleIncomingPayload(new TextDecoder().decode(v));
+                    } catch (e) {}
+                    isPolling = false;
+                }
+            }, 2500);
+        }
+
+        async function sendBleCommand(cmdObj) {
+            if (!bleChar) return;
+            const data = new TextEncoder().encode(JSON.stringify(cmdObj));
+            if (bleChar.writeValueWithResponse) {
+                await bleChar.writeValueWithResponse(data);
+            } else {
+                await bleChar.writeValue(data);
+            }
+        }
+
+        /* ================= 4. 双向 Flash 状态同步与报文解析 ================= */
+        async function pushSystemStateToHardware() {
+            if (!bleChar) return;
+            const payload = JSON.stringify({ reg: registry, atos: atomizers, map: devAtoMap });
+            const chunkSize = 110;
+            const totalChunks = Math.ceil(payload.length / chunkSize);
+
+            for (let i = 0; i < totalChunks; i++) {
+                const chunkStr = payload.slice(i * chunkSize, (i + 1) * chunkSize);
+                const packet = { cmd: "CFG_CHUNK", i: i, n: totalChunks, d: chunkStr };
+                await sendBleCommand(packet);
+                await new Promise(r => setTimeout(r, 45));
+            }
+        }
+
+        function handleIncomingPayload(raw) {
+            try {
+                const d = JSON.parse(raw);
+
+                if (d.cfg_c) {
+                    const [idx, total, content] = d.cfg_c;
+                    if (total === 0) return;
+                    if (idx === 0) incomingCfgBuffer = [];
+                    incomingCfgBuffer.push(content);
+
+                    if (idx === total - 1) {
+                        try {
+                            const fullJson = incomingCfgBuffer.join('');
+                            const parsed = JSON.parse(fullJson);
+                            if (parsed.reg) { registry = parsed.reg; saveData(K_REGISTRY, registry); }
+                            if (parsed.atos) { atomizers = parsed.atos; saveData(K_ATOS, atomizers); }
+                            if (parsed.map) { devAtoMap = parsed.map; saveData(K_DEV_ATO, devAtoMap); }
+                            renderDashboard();
+                            renderDeviceLibrary();
+                            renderAtomizerLibrary();
+                        } catch (err) {}
+                    }
+                    return;
+                }
+
+                if (d.dump === "END") {
+                    isDumping = false;
+                    mergeDumpBuffer(dumpBuffer);
+                    dumpBuffer = [];
+                    alert('已从 ESP32 板载Flash 成功恢复历史数据！');
+                    renderDashboard();
+                    return;
+                }
+
+                if (isDumping) {
+                    if (d.id || d.chip_id) dumpBuffer.push(d);
+                    return;
+                }
+
+                const syncId = Number(d.sync || d.sync_id) || 0;
+                const chipId = d.id || d.chip_id || '';
+
+                if (!chipId || chipId === 'UNKNOWN') {
+                    if (activeChipId) {
+                        document.getElementById('disp-dev-name').textContent = `${registry[activeChipId]?.name || 'DNA 60'} (已断开)`;
+                    } else {
+                        document.getElementById('disp-dev-name').textContent = '等待插入 DNA 60 主板...';
+                    }
+                    document.getElementById('btn-rename-dev').style.display = 'none';
+                    return;
+                }
+
+                if (syncId === 0) return;
+
+                const last = Array.isArray(d.last) ? { t: d.last[0], w: d.last[1], e: d.last[2], c: d.last[3] } : d.last;
+                const mean = Array.isArray(d.mean) ? { w: d.mean[0], t: d.mean[1], e: d.mean[2] } : d.mean;
+                const dev = Array.isArray(d.dev) ? { p: d.dev[0], e: d.dev[1], t: d.dev[2] } : d.dev;
+
+                const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
+                lastLiveSnapshot = { syncId, chipId, last, mean, dev, puffs: Number(d.puffs) || 0, ts: recordTs };
+
+                if (!registry[chipId]) {
+                    pendingPayload = lastLiveSnapshot;
+                    document.getElementById('modal-naming').classList.add('active');
+                    return;
+                }
+
+                activeChipId = chipId;
+                if (registry[chipId]) {
+                    registry[chipId].lastSnapshot = lastLiveSnapshot;
+                    saveData(K_REGISTRY, registry);
+                }
+
+                processSyncRecord(lastLiveSnapshot);
+            } catch (e) {}
+        }
+
+        function processSyncRecord(data) {
+            const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
+            if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) return;
+
+            const recTime = data.ts || Date.now();
+            let deltaPuffs = 0;
+            let deltaEnergyWh = 0;
+
+            if (lastRec && lastRec.chip_id === data.chipId) {
+                deltaPuffs = (data.dev.p >= lastRec.devPuffs) ? (data.dev.p - lastRec.devPuffs) : data.puffs;
+                deltaEnergyWh = Math.max(0, (data.dev.e - lastRec.devEnergyMwh) / 1000.0);
+            }
+
+            const targetAtoId = devAtoMap[data.chipId] || (atomizers[0]?.id);
+            const currentAto = getAto(targetAtoId);
+
+            const newRec = {
+                id: 'rec_' + recTime + '_' + data.syncId,
+                sync_id: data.syncId,
+                chip_id: data.chipId,
+                timestamp: recTime,
+                timeStr: formatDate(new Date(recTime)),
+                puffs: data.puffs,
+                devPuffs: data.dev.p,
+                devEnergyMwh: data.dev.e,
+                deltaPuffs: deltaPuffs,
+                deltaEnergyWh: deltaEnergyWh,
+                atomizer_id: targetAtoId
+            };
+
+            if (deltaPuffs > 0) {
+                if (currentAto) {
+                    currentAto.total_puffs = (Number(currentAto.total_puffs) || 0) + deltaPuffs;
+                    currentAto.coil_puffs = (Number(currentAto.coil_puffs) || 0) + deltaPuffs;
+                    saveData(K_ATOS, atomizers);
+                    pushSystemStateToHardware();
+                }
+                document.getElementById('attr-delta').textContent = `+${deltaPuffs} 口`;
+                document.getElementById('attr-ato-name').textContent = currentAto ? currentAto.name : '雾化器';
+                document.getElementById('attr-banner').classList.add('active');
+            }
+
+            syncRecords.unshift(newRec);
+            saveData(K_RECORDS, syncRecords);
+            renderDashboard();
+        }
+
+        function mergeDumpBuffer(records) {
+            if (!records || records.length === 0) return;
+            const groups = {};
+            records.forEach(r => {
+                const cid = r.id || r.chip_id || 'UNKNOWN';
+                if (!groups[cid]) groups[cid] = [];
+                groups[cid].push(r);
+            });
+
+            for (const cid in groups) {
+                groups[cid].sort((a, b) => ((a.ts || 0) * 1000) - ((b.ts || 0) * 1000));
+                let prevPuffs = 0, prevEnergy = 0;
+                groups[cid].forEach((item, index) => {
+                    const syncId = Number(item.sync || item.sync_id) || 0;
+                    const trueTs = (item.ts && Number(item.ts) > 100000000) ? (Number(item.ts) * 1000) : Date.now();
+                    const devP = Array.isArray(item.dev) ? item.dev[0] : (item.dev?.p || 0);
+                    const devE = Array.isArray(item.dev) ? item.dev[1] : (item.dev?.e || 0);
+
+                    let dP = 0, dE = 0;
+                    if (index > 0) {
+                        dP = Math.max(0, devP - prevPuffs);
+                        dE = Math.max(0, (devE - prevEnergy) / 1000.0);
+                    }
+                    prevPuffs = devP; prevEnergy = devE;
+
+                    const existIdx = syncRecords.findIndex(r => r.chip_id === cid && r.sync_id === syncId);
+                    if (existIdx >= 0) {
+                        syncRecords[existIdx].timestamp = trueTs;
+                        syncRecords[existIdx].timeStr = formatDate(new Date(trueTs));
+                        syncRecords[existIdx].deltaPuffs = dP;
+                        syncRecords[existIdx].deltaEnergyWh = dE;
+                    } else {
+                        syncRecords.push({
+                            id: 'rec_' + trueTs + '_' + syncId,
+                            sync_id: syncId, chip_id: cid, timestamp: trueTs,
+                            timeStr: formatDate(new Date(trueTs)), puffs: Number(item.puffs) || 0,
+                            devPuffs: devP, devEnergyMwh: devE, deltaPuffs: dP, deltaEnergyWh: dE,
+                            atomizer_id: devAtoMap[cid] || atomizers[0]?.id
+                        });
+                    }
+                });
+            }
+            syncRecords.sort((a, b) => b.timestamp - a.timestamp);
+            saveData(K_RECORDS, syncRecords);
+        }
+
+        /* ================= 5. 实时面板视图 ================= */
+        function renderDashboard() {
+            if (activeChipId && registry[activeChipId]) {
+                document.getElementById('disp-dev-name').textContent = registry[activeChipId].name;
+                document.getElementById('btn-rename-dev').style.display = 'inline';
+            } else {
+                document.getElementById('disp-dev-name').textContent = bleChar ? '等待插入 DNA 60 主板...' : '未连接设备';
+                document.getElementById('btn-rename-dev').style.display = 'none';
+            }
+
+            const atoSelect = document.getElementById('select-active-ato');
+            atoSelect.innerHTML = atomizers.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            const currentAtoId = devAtoMap[activeChipId] || atomizers[0]?.id;
+            atoSelect.value = currentAtoId;
+
+            atoSelect.onchange = (e) => {
+                if (activeChipId) {
+                    devAtoMap[activeChipId] = e.target.value;
+                    saveData(K_DEV_ATO, devAtoMap);
+                    pushSystemStateToHardware();
+                    renderDashboard();
+                }
+            };
+
+            const curAto = getAto(currentAtoId);
+            if (curAto) {
+                document.getElementById('disp-coil-spec').textContent = `搭载: ${curAto.coil_spec || '默认线圈'}`;
+                document.getElementById('disp-coil-puffs').textContent = (Number(curAto.coil_puffs) || 0).toLocaleString();
+            }
+
+            renderFilteredMetrics();
+            renderLogList();
+        }
+
+        document.getElementById('btn-reset-coil').addEventListener('click', () => {
+            const currentAtoId = devAtoMap[activeChipId] || atomizers[0]?.id;
+            const ato = getAto(currentAtoId);
+            if (!ato) return;
+
+            if (confirm(`确定为【${ato.name}】换丝清零吗？\n当前线圈已抽吸: ${ato.coil_puffs || 0} 口`)) {
+                if (!ato.history_resets) ato.history_resets = [];
+                ato.history_resets.push({ time: Date.now(), puffs: ato.coil_puffs || 0 });
+                ato.coil_puffs = 0;
+                saveData(K_ATOS, atomizers);
+                pushSystemStateToHardware();
+                renderDashboard();
+            }
+        });
+
+        document.getElementById('btn-reassign').addEventListener('click', () => {
+            if (syncRecords.length === 0) return;
+            const select = document.getElementById('select-reassign-target');
+            select.innerHTML = atomizers.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            select.value = syncRecords[0].atomizer_id || atomizers[0]?.id;
+            document.getElementById('modal-reassign').classList.add('active');
+        });
+
+        document.getElementById('btn-close-reassign').addEventListener('click', () => {
+            document.getElementById('modal-reassign').classList.remove('active');
+        });
+
+        document.getElementById('btn-confirm-reassign').addEventListener('click', () => {
+            const targetAtoId = document.getElementById('select-reassign-target').value;
+            if (syncRecords.length > 0) {
+                const rec = syncRecords[0];
+                const puffs = rec.deltaPuffs;
+                if (rec.atomizer_id !== targetAtoId) {
+                    const oldAto = getAto(rec.atomizer_id);
+                    if (oldAto) {
+                        oldAto.total_puffs = Math.max(0, (oldAto.total_puffs || 0) - puffs);
+                        oldAto.coil_puffs = Math.max(0, (oldAto.coil_puffs || 0) - puffs);
+                    }
+                    const newAto = getAto(targetAtoId);
+                    if (newAto) {
+                        newAto.total_puffs = (newAto.total_puffs || 0) + puffs;
+                        newAto.coil_puffs = (newAto.coil_puffs || 0) + puffs;
+                        document.getElementById('attr-ato-name').textContent = newAto.name;
+                    }
+                    rec.atomizer_id = targetAtoId;
+                    saveData(K_ATOS, atomizers);
+                    saveData(K_RECORDS, syncRecords);
+                    pushSystemStateToHardware();
+                }
+            }
+            document.getElementById('modal-reassign').classList.remove('active');
+            renderDashboard();
+        });
+
+        /* ================= 6. 设备档案视图 ================= */
+        function renderDeviceLibrary() {
+            const container = document.getElementById('devices-list-container');
+            const chipKeys = Object.keys(registry);
+            if (chipKeys.length === 0) {
+                container.innerHTML = '<div class="apple-card" style="text-align:center; font-size:13px; color:var(--text-secondary); padding:32px;">暂无已登记设备，插入 DNA 60 后自动生成</div>';
+                return;
+            }
+
+            container.innerHTML = chipKeys.map(chipId => {
+                const dev = registry[chipId];
+                const isCurrent = (chipId === activeChipId);
+                const records = syncRecords.filter(r => r.chip_id === chipId);
+                let syncTotalPuffs = 0;
+                records.forEach(r => syncTotalPuffs += Number(r.deltaPuffs) || 0);
+
+                const latestRec = records[0];
+                const boardLifetimePuffs = latestRec ? Number(latestRec.devPuffs) || 0 : '--';
+
+                return `
+                    <div class="asset-card ${isCurrent ? 'active-chip' : ''}">
+                        <div class="asset-header">
+                            <div>
+                                <div class="asset-title">
+                                    <span>${dev.name}</span>
+                                    ${isCurrent ? '<span class="apple-pill-tag online">在线</span>' : ''}
+                                </div>
+                                <div style="font-size:11px; font-family:monospace; color:var(--text-secondary); margin-top:3px;">${chipId}</div>
+                            </div>
+                            <span class="action-link" onclick="showLifetimeModal('${chipId}')">历史数据</span>
+                        </div>
+                        <div class="asset-stats-row">
+                            <div>
+                                <div style="font-size:16px; font-weight:700; color:var(--apple-blue);">+${syncTotalPuffs.toLocaleString()} <span style="font-size:10px; font-weight:400;">口</span></div>
+                                <div style="font-size:11px; color:var(--text-secondary);">Sync 累计增量</div>
+                            </div>
+                            <div>
+                                <div style="font-size:16px; font-weight:700;">${typeof boardLifetimePuffs === 'number' ? boardLifetimePuffs.toLocaleString() : boardLifetimePuffs} <span style="font-size:10px; font-weight:400;">口</span></div>
+                                <div style="font-size:11px; color:var(--text-secondary);">主板终生总口数</div>
+                            </div>
+                        </div>
+                        <div class="asset-actions-footer">
+                            <span>已记录 ${records.length} 次同步</span>
+                            <div style="display:flex; gap:8px;">
+                                <button class="apple-btn apple-btn-sm" onclick="renameDeviceFromLib('${chipId}')">改名</button>
+                                <button class="apple-btn apple-btn-sm apple-btn-destructive" onclick="deleteDeviceFromLib('${chipId}')">删除设备</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.deleteDeviceFromLib = function(chipId) {
+            const dev = registry[chipId];
+            if (!dev) return;
+            if (confirm(`确定要删除设备【${dev.name}】吗？`)) {
+                delete registry[chipId];
+                delete devAtoMap[chipId];
+                if (activeChipId === chipId) activeChipId = null;
+                saveData(K_REGISTRY, registry);
+                saveData(K_DEV_ATO, devAtoMap);
+                pushSystemStateToHardware();
+                renderDeviceLibrary();
+                renderDashboard();
+            }
+        };
+
+        window.renameDeviceFromLib = function(chipId) {
+            const dev = registry[chipId];
+            if (!dev) return;
+            const newName = prompt('修改设备名称：', dev.name);
+            if (newName && newName.trim()) {
+                dev.name = newName.trim();
+                saveData(K_REGISTRY, registry);
+                pushSystemStateToHardware();
+                renderDeviceLibrary();
+                renderDashboard();
+            }
+        };
+
+        window.showLifetimeModal = function(chipId) {
+            const dev = registry[chipId];
+            const snap = dev?.lastSnapshot || lastLiveSnapshot;
+            if (!snap) { alert('暂无该设备的底层硬件快照数据'); return; }
+            document.getElementById('lt-chip-id').textContent = chipId;
+            document.getElementById('lt-dev-puffs').textContent = `${(snap.dev?.p || snap.dev?.puffs || 0).toLocaleString()} 口`;
+            document.getElementById('lt-dev-time').textContent = `${(snap.dev?.t || 0).toFixed(1)}s (约 ${(((snap.dev?.t || 0))/3600).toFixed(2)} 小时)`;
+            document.getElementById('lt-dev-energy').textContent = `${(((snap.dev?.e || 0))/1000).toFixed(2)} Wh`;
+            document.getElementById('lt-mean-power').textContent = `${(snap.mean?.w || 0).toFixed(1)} W`;
+            document.getElementById('lt-mean-time').textContent = `${(snap.mean?.t || 0).toFixed(2)} s`;
+            document.getElementById('modal-lifetime').classList.add('active');
+        };
+
+        document.getElementById('btn-close-lifetime').addEventListener('click', () => {
+            document.getElementById('modal-lifetime').classList.remove('active');
+        });
+
+        document.getElementById('btn-dump-from-modal').addEventListener('click', () => {
+            if (!bleChar) { alert('请先连接 ESP32 蓝牙设备！'); return; }
+            isDumping = true; dumpBuffer = [];
+            sendBleCommand({ cmd: "DUMP" });
+            document.getElementById('modal-lifetime').classList.remove('active');
+        });
+
+        /* ================= 7. 雾化器档案视图 ================= */
+        function renderAtomizerLibrary() {
+            const container = document.getElementById('atomizers-list-container');
+            container.innerHTML = atomizers.map(ato => `
+                <div class="asset-card">
+                    <div class="asset-header">
+                        <div>
+                            <div class="asset-title">${ato.name}</div>
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">搭载: ${ato.coil_spec || '默认线圈'}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:15px; font-weight:700;">${(Number(ato.total_puffs)||0).toLocaleString()} 口</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">总口数</div>
+                        </div>
+                    </div>
+                    <div class="asset-stats-row">
+                        <div>
+                            <div style="font-size:15px; font-weight:700; color:var(--apple-green);">${ato.coil_puffs || 0} 口</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">当前线圈寿命</div>
+                        </div>
+                        <div>
+                            <div style="font-size:15px; font-weight:700;">${(ato.history_resets || []).length} 次</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">换丝清零记录</div>
+                        </div>
+                    </div>
+                    <div class="asset-actions-footer">
+                        <span style="font-size:11px;">ID: ${ato.id}</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="apple-btn apple-btn-sm" onclick="renameAto('${ato.id}')">重命名</button>
+                            <button class="apple-btn apple-btn-sm" onclick="editAtoCoilSpec('${ato.id}')">线圈</button>
+                            <button class="apple-btn apple-btn-sm apple-btn-destructive" onclick="deleteAto('${ato.id}')">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('btn-create-ato').addEventListener('click', () => {
+            const name = document.getElementById('input-new-ato-name').value.trim();
+            if (!name) return;
+            atomizers.push({ id: 'ato_' + Date.now(), name: name, total_puffs: 0, coil_puffs: 0, coil_spec: '初始配置' });
+            saveData(K_ATOS, atomizers);
+            pushSystemStateToHardware();
+            document.getElementById('input-new-ato-name').value = '';
+            renderAtomizerLibrary();
+            renderDashboard();
+        });
+
+        window.renameAto = function(atoId) {
+            const ato = getAto(atoId);
+            if (!ato) return;
+            const newName = prompt('输入新的雾化器名称：', ato.name);
+            if (newName && newName.trim()) {
+                ato.name = newName.trim();
+                saveData(K_ATOS, atomizers);
+                pushSystemStateToHardware();
+                renderAtomizerLibrary();
+                renderDashboard();
+            }
+        };
+
+        window.deleteAto = function(atoId) {
+            if (atomizers.length <= 1) { alert('系统中至少需要保留 1 个雾化器档案。'); return; }
+            const ato = getAto(atoId);
+            if (!ato) return;
+            if (confirm(`确定要彻底删除雾化器【${ato.name}】吗？`)) {
+                atomizers = atomizers.filter(a => a.id !== atoId);
+                for (let chip in devAtoMap) {
+                    if (devAtoMap[chip] === atoId) devAtoMap[chip] = atomizers[0].id;
+                }
+                saveData(K_ATOS, atomizers);
+                saveData(K_DEV_ATO, devAtoMap);
+                pushSystemStateToHardware();
+                renderAtomizerLibrary();
+                renderDashboard();
+            }
+        };
+
+        window.editAtoCoilSpec = function(atoId) {
+            const ato = getAto(atoId);
+            if (!ato) return;
+            const spec = prompt('修改发热丝 / 网芯规格描述：', ato.coil_spec || '');
+            if (spec !== null) {
+                ato.coil_spec = spec.trim() || '默认配置';
+                saveData(K_ATOS, atomizers);
+                pushSystemStateToHardware();
+                renderAtomizerLibrary();
+                renderDashboard();
+            }
+        };
+
+        /* ================= 8. 无线固件升级流程 ================= */
+        document.getElementById('btn-start-ota').addEventListener('click', async () => {
+            const fileInput = document.getElementById('file-ota');
+            if (!fileInput.files.length) { alert('请先选择编译好的固件 (.bin) 文件！'); return; }
+            if (!bleChar) { alert('请先通过右上角连接 ESP32 蓝牙！'); return; }
+
+            const file = fileInput.files[0];
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+
+            const statusText = document.getElementById('ota-status-text');
+            const pBar = document.getElementById('ota-progress-bar');
+            statusText.textContent = `开始推送固件... 文件大小: ${(bytes.length/1024).toFixed(1)} KB`;
+
+            await sendBleCommand({ cmd: "OTA_START", size: bytes.length });
+            await new Promise(r => setTimeout(r, 600));
+
+            const chunkSize = 128;
+            const totalPackets = Math.ceil(bytes.length / chunkSize);
+
+            for (let i = 0; i < totalPackets; i++) {
+                const chunk = bytes.slice(i * chunkSize, (i + 1) * chunkSize);
+                if (bleChar.writeValueWithResponse) {
+                    await bleChar.writeValueWithResponse(chunk);
+                } else {
+                    await bleChar.writeValue(chunk);
+                }
+
+                if (i % 8 === 0 || i === totalPackets - 1) {
+                    const percent = Math.round(((i + 1) / totalPackets) * 100);
+                    pBar.style.width = `${percent}%`;
+                    statusText.textContent = `推送中: ${percent}% (${i+1}/${totalPackets} 包)`;
+                }
+                await new Promise(r => setTimeout(r, 20));
+            }
+
+            statusText.textContent = '固件上传完毕，硬件正在校验并切换分区...';
+            await sendBleCommand({ cmd: "OTA_END" });
+            pBar.style.width = '100%';
+            alert('固件推送完成！ESP32 正在自动切换分区并重启。');
+        });
+
+        /* ================= 9. 数据聚合与持久化工具 ================= */
+        function renderFilteredMetrics() {
+            const bounds = getTimeBounds(currentFilterRange);
+            const filtered = syncRecords.filter(r => r.timestamp >= bounds.start && r.timestamp <= bounds.end);
+
+            let totalPuffs = 0, totalEnergyWh = 0;
+            filtered.forEach(r => {
+                totalPuffs += Number(r.deltaPuffs) || 0;
+                totalEnergyWh += Number(r.deltaEnergyWh) || 0;
+            });
+
+            document.getElementById('filter-puffs').textContent = totalPuffs.toLocaleString();
+            document.getElementById('filter-energy').textContent = totalEnergyWh.toFixed(2);
+            document.getElementById('filter-sync-count').textContent = filtered.length.toLocaleString();
+
+            const now = new Date();
+            let days = 1;
+            if (currentFilterRange === 'week') days = Math.max(1, now.getDay() === 0 ? 7 : now.getDay());
+            else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
+            document.getElementById('filter-rate').textContent = Math.round(totalPuffs / days);
+        }
+
+        function getTimeBounds(range) {
+            const now = new Date();
+            let start = 0, end = Number.MAX_SAFE_INTEGER;
+            if (range === 'day') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+            } else if (range === 'week') {
+                const day = now.getDay() === 0 ? 7 : now.getDay();
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1, 0, 0, 0, 0).getTime();
+            } else if (range === 'month') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).getTime();
+            }
+            return { start, end };
+        }
+
+        function renderLogList() {
+            const container = document.getElementById('log-list');
+            document.getElementById('log-count').textContent = `${syncRecords.length} 笔记录`;
+            if (syncRecords.length === 0) {
+                container.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 18px;">暂无同步记录</div>';
+                return;
+            }
+            container.innerHTML = syncRecords.slice(0, 25).map(r => {
+                const ato = getAto(r.atomizer_id);
+                return `
+                    <div class="timeline-row">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">${ato ? ato.name : '未指定雾化器'}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top:2px;">${r.timeStr}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: var(--apple-blue);">+${r.deltaPuffs} 口</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">${(r.deltaEnergyWh||0).toFixed(2)} Wh</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('btn-save-dev-name').addEventListener('click', () => {
+            const name = document.getElementById('input-dev-name').value.trim() || 'DNA60 主机';
+            if (pendingPayload) {
+                registry[pendingPayload.chipId] = { name: name, registered_at: Date.now(), lastSnapshot: pendingPayload };
+                saveData(K_REGISTRY, registry);
+                pushSystemStateToHardware();
+                document.getElementById('modal-naming').classList.remove('active');
+                activeChipId = pendingPayload.chipId;
+                processSyncRecord(pendingPayload);
+                pendingPayload = null;
+            }
+        });
+
+        document.getElementById('btn-rename-dev').addEventListener('click', () => {
+            if (!activeChipId || !registry[activeChipId]) return;
+            const newName = prompt('修改当前主机名称：', registry[activeChipId].name);
+            if (newName && newName.trim()) {
+                registry[activeChipId].name = newName.trim();
+                saveData(K_REGISTRY, registry);
+                pushSystemStateToHardware();
+                renderDashboard();
+            }
+        });
+
+        function getAto(id) { return atomizers.find(a => a.id === id); }
+        function saveData(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+        function formatDate(d) {
+            const pad = n => n.toString().padStart(2, '0');
+            return `${d.getMonth()+1}-${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function initDefaultAtos() {
+            if (atomizers.length === 0) {
+                atomizers = [{ id: 'ato_default', name: '默认雾化器', total_puffs: 0, coil_puffs: 0, coil_spec: '初始配置' }];
+                saveData(K_ATOS, atomizers);
+            }
+        }
+    </script>
+</body>
+</html>
