@@ -12,43 +12,43 @@
             --apple-green: #34c759;
             --apple-red: #ff3b30;
             --apple-red-bg: rgba(255, 59, 48, 0.08);
-            --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            --transition-smooth: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* 浅色模式 (Apple 极简灰白) */
+        /* 浅色模式 (Apple 极简浅灰白) */
         html[data-theme="light"],
         html[data-theme="auto"] {
             --bg: #f5f5f7;
-            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-bg: rgba(255, 255, 255, 0.82);
             --card-solid: #ffffff;
-            --nav-bg: rgba(245, 245, 247, 0.75);
+            --nav-bg: rgba(245, 245, 247, 0.88);
             --border-subtle: rgba(0, 0, 0, 0.06);
-            --border-hover: rgba(0, 0, 0, 0.14);
+            --border-hover: rgba(0, 0, 0, 0.12);
             --text-primary: #1d1d1f;
             --text-secondary: #86868b;
             --text-tertiary: #a1a1a6;
-            --fill-secondary: rgba(0, 0, 0, 0.035);
-            --fill-tertiary: rgba(0, 0, 0, 0.06);
-            --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.04);
+            --fill-secondary: rgba(0, 0, 0, 0.04);
+            --fill-tertiary: rgba(0, 0, 0, 0.07);
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
             --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.05);
             --modal-bg: rgba(255, 255, 255, 0.96);
             --modal-overlay: rgba(0, 0, 0, 0.25);
         }
 
-        /* 深色模式 (Apple 深邃黑) */
+        /* 深色模式 (Apple 黑) */
         html[data-theme="dark"] {
             --bg: #000000;
             --card-bg: rgba(28, 28, 30, 0.82);
             --card-solid: #1c1c1e;
-            --nav-bg: rgba(0, 0, 0, 0.75);
+            --nav-bg: rgba(20, 20, 22, 0.85);
             --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-hover: rgba(255, 255, 255, 0.18);
+            --border-hover: rgba(255, 255, 255, 0.16);
             --text-primary: #f5f5f7;
             --text-secondary: #86868b;
             --text-tertiary: #636366;
-            --fill-secondary: rgba(255, 255, 255, 0.05);
-            --fill-tertiary: rgba(255, 255, 255, 0.09);
-            --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+            --fill-secondary: rgba(255, 255, 255, 0.06);
+            --fill-tertiary: rgba(255, 255, 255, 0.1);
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
             --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
             --modal-bg: rgba(28, 28, 30, 0.96);
             --modal-overlay: rgba(0, 0, 0, 0.65);
@@ -59,15 +59,15 @@
                 --bg: #000000;
                 --card-bg: rgba(28, 28, 30, 0.82);
                 --card-solid: #1c1c1e;
-                --nav-bg: rgba(0, 0, 0, 0.75);
+                --nav-bg: rgba(20, 20, 22, 0.85);
                 --border-subtle: rgba(255, 255, 255, 0.08);
-                --border-hover: rgba(255, 255, 255, 0.18);
+                --border-hover: rgba(255, 255, 255, 0.16);
                 --text-primary: #f5f5f7;
                 --text-secondary: #86868b;
                 --text-tertiary: #636366;
-                --fill-secondary: rgba(255, 255, 255, 0.05);
-                --fill-tertiary: rgba(255, 255, 255, 0.09);
-                --shadow-subtle: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+                --fill-secondary: rgba(255, 255, 255, 0.06);
+                --fill-tertiary: rgba(255, 255, 255, 0.1);
+                --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
                 --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
                 --modal-bg: rgba(28, 28, 30, 0.96);
                 --modal-overlay: rgba(0, 0, 0, 0.65);
@@ -78,69 +78,193 @@
         body {
             background-color: var(--bg);
             color: var(--text-primary);
-            transition: background-color 0.4s ease, color 0.4s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
             display: flex;
             justify-content: center;
             min-height: 100vh;
-            padding: 0 16px 48px 16px;
+            padding: 0 16px env(safe-area-inset-bottom, 34px) 16px;
             touch-action: pan-y;
         }
 
-        .landing-container { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 20px; }
-
-        /* 悬浮毛玻璃导航 */
-        .glass-nav-wrapper { position: sticky; top: 14px; z-index: 100; margin-bottom: 4px; }
-        .glass-nav {
-            background: var(--nav-bg);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border: 1px solid var(--border-subtle);
-            border-radius: 980px;
-            padding: 6px 12px;
+        .landing-container {
+            width: 100%;
+            max-width: 600px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ================= 移动端原生优化：双层毛玻璃顶栏 ================= */
+        .glass-nav-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding-top: calc(env(safe-area-inset-top, 8px) + 6px);
+            padding-bottom: 4px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: linear-gradient(180deg, var(--bg) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        .glass-nav-card {
+            background: var(--nav-bg);
+            backdrop-filter: saturate(180%) blur(25px);
+            -webkit-backdrop-filter: saturate(180%) blur(25px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 10px 14px;
             box-shadow: var(--shadow-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             transition: var(--transition-smooth);
         }
 
-        .nav-segments { display: flex; gap: 2px; background: var(--fill-secondary); padding: 3px; border-radius: 980px; }
-        .nav-tab-btn {
-            background: none; border: none; color: var(--text-secondary); font-size: 13px; font-weight: 500;
-            padding: 6px 13px; border-radius: 980px; cursor: pointer; transition: var(--transition-smooth); user-select: none;
-        }
-        .nav-tab-btn.active {
-            background: var(--card-solid); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight: 600;
+        /* 顶栏第一行：品牌、状态点、外观切换、连接按钮 */
+        .nav-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
         }
 
-        .nav-right-actions { display: flex; align-items: center; gap: 8px; }
-        .theme-switch-pill { display: flex; background: var(--fill-secondary); padding: 3px; border-radius: 980px; gap: 2px; }
-        .theme-opt-btn {
-            background: none; border: none; color: var(--text-secondary); padding: 5px 8px; border-radius: 980px;
-            cursor: pointer; font-size: 11px; font-weight: 500; transition: var(--transition-smooth);
+        .nav-brand-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .theme-opt-btn.active { background: var(--card-solid); color: var(--text-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.08); font-weight: 600; }
+
+        .nav-brand-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .nav-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--fill-secondary);
+            padding: 3px 8px;
+            border-radius: 980px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+            transition: background 0.3s ease;
+        }
+        .status-dot.online {
+            background: var(--apple-green);
+            box-shadow: 0 0 8px rgba(52, 199, 89, 0.6);
+        }
+
+        .nav-actions-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-switch-pill {
+            display: flex;
+            background: var(--fill-secondary);
+            padding: 2px;
+            border-radius: 980px;
+            gap: 1px;
+        }
+        .theme-opt-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 4px 7px;
+            border-radius: 980px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+        }
+        .theme-opt-btn.active {
+            background: var(--card-solid);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            font-weight: 600;
+        }
 
         .btn-connect {
-            background: var(--apple-blue); color: #ffffff; border: none; padding: 7px 16px; border-radius: 980px;
-            font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+            background: var(--apple-blue);
+            color: #ffffff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 980px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-connect:hover { background: var(--apple-blue-hover); transform: scale(1.02); }
-        .btn-connect.connected { background: var(--fill-tertiary); color: var(--apple-green); border: 1px solid rgba(52, 199, 89, 0.25); }
+        .btn-connect:active { transform: scale(0.96); }
+        .btn-connect.connected {
+            background: var(--fill-secondary);
+            color: var(--apple-green);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
 
-        /* 内容视口 */
-        .view-content { display: flex; flex-direction: column; gap: 16px; animation: viewFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        /* 顶栏第二行：均分式 iOS 分段控制器 */
+        .nav-segments-track {
+            display: flex;
+            background: var(--fill-secondary);
+            padding: 3px;
+            border-radius: 12px;
+            width: 100%;
+        }
+
+        .nav-tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 7px 0;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: center;
+            user-select: none;
+        }
+        .nav-tab-btn.active {
+            background: var(--card-solid);
+            color: var(--text-primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            font-weight: 600;
+        }
+
+        /* ================= 核心视口与卡片 ================= */
+        .view-content {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            animation: viewFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
         .view-content.hidden { display: none; }
 
-        @keyframes viewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes viewFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         .apple-card {
             background: var(--card-bg);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid var(--border-subtle);
-            border-radius: 22px;
-            padding: 22px;
+            border-radius: 20px;
+            padding: 20px;
             box-shadow: var(--shadow-card);
             display: flex;
             flex-direction: column;
@@ -151,32 +275,31 @@
 
         .card-label-subtle { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); font-weight: 600; }
         .hero-device-header { display: flex; justify-content: space-between; align-items: center; }
-        .device-headline { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
+        .device-headline { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
 
         .action-link { color: var(--apple-blue); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; }
         .action-link:hover { opacity: 0.7; }
 
         .mounted-ato-row {
-            display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 0;
             border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);
         }
 
         .apple-select {
             background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
-            padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 500; outline: none; cursor: pointer;
+            padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; outline: none; cursor: pointer;
         }
 
         .coil-shelf { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2px; }
-        .coil-puffs-huge { font-size: 42px; font-weight: 800; letter-spacing: -0.035em; color: var(--text-primary); line-height: 1; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .coil-puffs-huge { font-size: 40px; font-weight: 800; letter-spacing: -0.035em; color: var(--text-primary); line-height: 1; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
         .coil-puffs-unit { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-left: 4px; }
 
         .apple-btn {
             background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
             padding: 8px 16px; border-radius: 980px; font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition-smooth);
         }
-        .apple-btn:hover { background: var(--fill-tertiary); transform: scale(0.99); }
+        .apple-btn:active { transform: scale(0.98); }
         .apple-btn-primary { background: var(--apple-blue); color: #ffffff; border: none; font-weight: 600; }
-        .apple-btn-primary:hover { background: var(--apple-blue-hover); }
         .apple-btn-destructive { background: var(--apple-red-bg); color: var(--apple-red); border: 1px solid rgba(255, 59, 48, 0.15); }
         .apple-btn-sm { padding: 5px 12px; font-size: 12px; }
 
@@ -195,7 +318,6 @@
             justify-content: center;
             white-space: nowrap;
         }
-        .apple-btn-field:hover { background: var(--apple-blue-hover); transform: scale(0.99); }
         .apple-btn-field:active { transform: scale(0.96); }
 
         .sync-toast {
@@ -204,18 +326,18 @@
         }
         .sync-toast.active { display: flex; }
 
-        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .metric-cell { background: var(--fill-secondary); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
-        .metric-cell-val { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .metric-cell { background: var(--fill-secondary); border-radius: 15px; padding: 13px; display: flex; flex-direction: column; gap: 4px; }
+        .metric-cell-val { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
         .metric-cell-label { font-size: 12px; color: var(--text-secondary); }
 
-        .asset-card { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+        .asset-card { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
         .asset-card.active-chip { border-color: rgba(0, 113, 227, 0.45); box-shadow: 0 0 0 1px rgba(0, 113, 227, 0.15); }
         .asset-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .asset-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .asset-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
         .apple-pill-tag { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 980px; background: var(--fill-secondary); color: var(--text-secondary); }
         .apple-pill-tag.online { background: rgba(52, 199, 89, 0.12); color: var(--apple-green); }
-        .asset-stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--fill-secondary); padding: 10px 14px; border-radius: 14px; }
+        .asset-stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--fill-secondary); padding: 10px 14px; border-radius: 12px; }
         .asset-actions-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 4px; font-size: 12px; color: var(--text-secondary); }
 
         .timeline-scroll { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -228,42 +350,53 @@
         }
         .apple-modal-overlay.active { display: flex; }
         .apple-modal-window {
-            background: var(--modal-bg); border: 1px solid var(--border-subtle); border-radius: 24px; padding: 24px;
+            background: var(--modal-bg); border: 1px solid var(--border-subtle); border-radius: 22px; padding: 22px;
             width: 100%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 16px;
         }
         .apple-input {
             background: var(--fill-secondary); color: var(--text-primary); border: 1px solid var(--border-subtle);
             padding: 10px 14px; border-radius: 12px; font-size: 14px; outline: none; width: 100%;
         }
-        .param-detail-line { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+        .param-detail-line { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border-subtle); }
 
-        /* 固件进度条 */
         .progress-bar-wrap { background: var(--fill-secondary); border-radius: 980px; height: 8px; width: 100%; overflow: hidden; margin-top: 6px; }
         .progress-bar-fill { background: var(--apple-blue); height: 100%; width: 0%; transition: width 0.15s ease; }
     </style>
 </head>
 <body>
     <div class="landing-container">
-        <!-- 悬浮毛玻璃导航 -->
-        <div class="glass-nav-wrapper">
-            <nav class="glass-nav">
-                <div class="nav-segments">
+        <!-- 原生级双层毛玻璃导航 -->
+        <header class="glass-nav-wrapper">
+            <nav class="glass-nav-card">
+                <!-- 第一行：状态信息与主操作 -->
+                <div class="nav-top-row">
+                    <div class="nav-brand-group">
+                        <span class="nav-brand-title">DNA 60</span>
+                        <div class="nav-status-badge">
+                            <span class="status-dot" id="nav-status-dot"></span>
+                            <span id="nav-status-text">未连接</span>
+                        </div>
+                    </div>
+
+                    <div class="nav-actions-group">
+                        <div class="theme-switch-pill" title="外观切换">
+                            <button class="theme-opt-btn" data-set-theme="light">浅色</button>
+                            <button class="theme-opt-btn" data-set-theme="auto">自动</button>
+                            <button class="theme-opt-btn" data-set-theme="dark">深色</button>
+                        </div>
+                        <button id="btn-conn" class="btn-connect">连接</button>
+                    </div>
+                </div>
+
+                <!-- 第二行：分段控制器（均分宽度） -->
+                <div class="nav-segments-track">
                     <button class="nav-tab-btn active" id="tab-btn-dash">实时</button>
                     <button class="nav-tab-btn" id="tab-btn-devices">设备</button>
                     <button class="nav-tab-btn" id="tab-btn-atos">雾化器</button>
                     <button class="nav-tab-btn" id="tab-btn-ota">固件</button>
                 </div>
-
-                <div class="nav-right-actions">
-                    <div class="theme-switch-pill" title="切换外观风格">
-                        <button class="theme-opt-btn" data-set-theme="light">浅色</button>
-                        <button class="theme-opt-btn" data-set-theme="auto">自动</button>
-                        <button class="theme-opt-btn" data-set-theme="dark">深色</button>
-                    </div>
-                    <button id="btn-conn" class="btn-connect">连接</button>
-                </div>
             </nav>
-        </div>
+        </header>
 
         <!-- 视图 1: 实时面板 -->
         <main class="view-content" id="view-dashboard">
@@ -279,7 +412,7 @@
 
                 <div class="mounted-ato-row">
                     <span style="font-size: 13px; color: var(--text-secondary);">搭载雾化器</span>
-                    <select id="select-active-ato" class="apple-select" style="min-width: 150px;"></select>
+                    <select id="select-active-ato" class="apple-select" style="min-width: 140px;"></select>
                 </div>
 
                 <div class="coil-shelf">
@@ -294,7 +427,7 @@
                 </div>
             </div>
 
-            <!-- 同步增量提醒条 (已直接挂载对应雾化器名称) -->
+            <!-- 同步增量提醒条 -->
             <div class="sync-toast" id="attr-banner">
                 <div>本次同步 <strong id="attr-delta" style="color:var(--apple-blue);">+0 口</strong> 已记入 <strong id="attr-ato-name" style="color:var(--text-primary);">默认雾化器</strong></div>
                 <span class="action-link" id="btn-reassign">更改归属</span>
@@ -303,11 +436,11 @@
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Usage Analytics</span>
-                    <div class="nav-segments" id="filter-tabs-container">
-                        <button class="nav-tab-btn active" data-range="day">今日</button>
-                        <button class="nav-tab-btn" data-range="week">本周</button>
-                        <button class="nav-tab-btn" data-range="month">本月</button>
-                        <button class="nav-tab-btn" data-range="all">全部</button>
+                    <div style="display:flex; background:var(--fill-secondary); padding:2px; border-radius:980px; gap:1px;" id="filter-tabs-container">
+                        <button class="theme-opt-btn active" data-range="day">今日</button>
+                        <button class="theme-opt-btn" data-range="week">本周</button>
+                        <button class="theme-opt-btn" data-range="month">本月</button>
+                        <button class="theme-opt-btn" data-range="all">全部</button>
                     </div>
                 </div>
 
@@ -352,7 +485,7 @@
 
         <!-- 视图 3: 雾化器档案 -->
         <main class="view-content hidden" id="view-atomizers">
-            <div class="apple-card" style="padding: 16px 20px;">
+            <div class="apple-card" style="padding: 16px 18px;">
                 <span class="card-label-subtle">New Atomizer</span>
                 <div style="display: flex; gap: 8px; margin-top: 4px;">
                     <input type="text" id="input-new-ato-name" class="apple-input" placeholder="雾化器名称 (如 Paravozz 10.1)">
@@ -384,7 +517,7 @@
         </main>
     </div>
 
-    <!-- 弹窗 1: 主板历史数据快照 -->
+    <!-- 弹窗 1: 主板历史数据 -->
     <div class="apple-modal-overlay" id="modal-lifetime">
         <div class="apple-modal-window">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -427,8 +560,9 @@
     </div>
 
     <script>
-        const SERVICE_UUID = 0xffe0;
-        const CHAR_UUID = 0xffe1;
+        /* ================= 解决 iOS Bluefy 报错的标准 128 位 UUID 字符串 ================= */
+        const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+        const CHAR_UUID    = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
         const K_REGISTRY = 'dna60_reg_v4';
         const K_ATOS     = 'dna60_atos_v4';
@@ -493,7 +627,7 @@
             if (target === 'atos') renderAtomizerLibrary();
         }
 
-        // 移动端左右滑动识别逻辑 (Touch Swipe)
+        // 移动端左右滑动识别
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
@@ -523,13 +657,9 @@
 
             if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
                 if (deltaX < 0) {
-                    if (activeTabIdx < tabs.length - 1) {
-                        switchView(tabs[activeTabIdx + 1]);
-                    }
+                    if (activeTabIdx < tabs.length - 1) switchView(tabs[activeTabIdx + 1]);
                 } else {
-                    if (activeTabIdx > 0) {
-                        switchView(tabs[activeTabIdx - 1]);
-                    }
+                    if (activeTabIdx > 0) switchView(tabs[activeTabIdx - 1]);
                 }
             }
             touchStartX = 0;
@@ -537,9 +667,9 @@
         }
 
         document.getElementById('filter-tabs-container').addEventListener('click', (e) => {
-            const tab = e.target.closest('.nav-tab-btn');
+            const tab = e.target.closest('button');
             if (!tab) return;
-            document.querySelectorAll('#filter-tabs-container .nav-tab-btn').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#filter-tabs-container button').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             currentFilterRange = tab.getAttribute('data-range') || 'day';
             renderFilteredMetrics();
@@ -547,6 +677,8 @@
 
         /* ================= 3. Web Bluetooth 严格串行通信 ================= */
         const btnConn = document.getElementById('btn-conn');
+        const statusDot = document.getElementById('nav-status-dot');
+        const statusText = document.getElementById('nav-status-text');
 
         window.addEventListener('DOMContentLoaded', async () => {
             renderDashboard();
@@ -560,27 +692,34 @@
 
         btnConn.addEventListener('click', async () => {
             try {
+                // 严格传递标准 128 位 UUID 字符串，杜绝 Bluefy 解析崩溃
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'DNA60-Sync' }],
                     optionalServices: [SERVICE_UUID]
                 });
                 setupGattConnection(device);
-            } catch (err) {}
+            } catch (err) {
+                console.error("Bluetooth Request Error:", err);
+            }
         });
 
         async function setupGattConnection(device) {
             device.addEventListener('gattserverdisconnected', () => {
                 btnConn.textContent = '连接';
                 btnConn.classList.remove('connected');
+                statusDot.classList.remove('online');
+                statusText.textContent = '未连接';
                 bleChar = null;
                 activeChipId = null;
                 renderDashboard();
             });
 
-            btnConn.textContent = '连接中...';
+            btnConn.textContent = '连接中';
             const server = await device.gatt.connect();
             btnConn.textContent = '已连接';
             btnConn.classList.add('connected');
+            statusDot.classList.add('online');
+            statusText.textContent = '已就绪';
 
             const service = await server.getPrimaryService(SERVICE_UUID);
             bleChar = await service.getCharacteristic(CHAR_UUID);
