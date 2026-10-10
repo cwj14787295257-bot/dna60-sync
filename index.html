@@ -449,7 +449,6 @@
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Active Hardware</span>
-                    <span class="action-link" id="btn-rename-dev" style="display:none;">重命名</span>
                 </div>
 
                 <div class="device-headline">
@@ -485,7 +484,7 @@
                 <span class="action-link" id="btn-reassign">更改归属</span>
             </div>
 
-            <!-- 2. 使用数据统计板块 -->
+            <!-- 2. 使用数据统计板块 (Usage Analytics) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Usage Analytics</span>
@@ -511,8 +510,8 @@
                         <div class="metric-cell-label">日均频次 (口/天)</div>
                     </div>
                     <div class="metric-cell">
-                        <div class="metric-cell-val" id="filter-sync-count">0</div>
-                        <div class="metric-cell-label">同步记录次数</div>
+                        <div class="metric-cell-val" id="filter-avg-power">--</div>
+                        <div class="metric-cell-label">平均功率 (W)</div>
                     </div>
                 </div>
 
@@ -528,7 +527,7 @@
                 </div>
             </div>
 
-            <!-- 3. 最近抽吸特征卡片 -->
+            <!-- 3. 最近抽吸特征卡片 (置于 Usage Analytics 下方) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Last Puff Status</span>
@@ -554,11 +553,11 @@
                 </div>
             </div>
 
-            <!-- 4. 时间线同步日志 -->
+            <!-- 4. 时间线同步日志 (Activity Timeline) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Activity Timeline</span>
-                    <span id="log-count" style="font-size: 12px; color: var(--text-secondary);">0 笔记录</span>
+                    <span id="log-count" style="font-size: 12px; color: var(--text-secondary);">0 次同步</span>
                 </div>
                 <div class="timeline-scroll" id="log-list">
                     <div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 18px;">暂无同步记录</div>
@@ -905,7 +904,6 @@
             try {
                 const d = JSON.parse(raw);
 
-                // 接收 Flash 分片配置
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -946,8 +944,6 @@
                     return;
                 }
 
-                // 核心修复 1：无条件优先检查物理连接状态！
-                // 只要 connected 为 false，立刻置为断开态，绝不弹窗，也绝不向下解析！
                 if (d.connected === false) {
                     if (activeChipId && registry[activeChipId]) {
                         document.getElementById('disp-dev-name').textContent = `${registry[activeChipId].name} (已断开)`;
@@ -955,9 +951,7 @@
                         document.getElementById('disp-dev-name').textContent = '等待插入 DNA 主板...';
                     }
                     updateBatteryUI(null);
-                    document.getElementById('btn-rename-dev').style.display = 'none';
 
-                    // 若正在展示弹窗，立刻销毁
                     const modal = document.getElementById('modal-naming');
                     if (modal && modal.classList.contains('active')) {
                         modal.classList.remove('active');
@@ -966,10 +960,9 @@
                     return;
                 }
 
-                // 核心修复 2：只有当真实存在芯片序列号时才被承认为合法连接
                 const rawChipId = (d.chip_id || d.id || '').trim();
                 if (!rawChipId || rawChipId === 'UNKNOWN') {
-                    return; // 尚在枚举或拔出残包，直接忽略，绝不伪造 ID
+                    return;
                 }
 
                 const chipId = rawChipId;
@@ -998,7 +991,6 @@
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
                 lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, res: rawRes, ts: recordTs };
 
-                // 未登记的真实主板拉起命名弹窗
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
                     const modal = document.getElementById('modal-naming');
@@ -1100,10 +1092,8 @@
         function renderDashboard() {
             if (activeChipId && registry[activeChipId]) {
                 document.getElementById('disp-dev-name').textContent = registry[activeChipId].name;
-                document.getElementById('btn-rename-dev').style.display = 'inline';
             } else {
                 document.getElementById('disp-dev-name').textContent = bleChar ? '已就绪 (等待点火数据)' : '未连接设备';
-                document.getElementById('btn-rename-dev').style.display = 'none';
             }
 
             const atoSelect = document.getElementById('select-active-ato');
@@ -1136,13 +1126,13 @@
                     document.getElementById('rt-last-power').textContent = Number(l.w).toFixed(1);
                     document.getElementById('rt-last-energy').textContent = Number(l.e).toFixed(2);
                     document.getElementById('rt-last-temp').textContent = (l.c && l.c > 0) ? `${Math.round(l.c)}°F` : 'OFF';
-                    document.getElementById('disp-last-hint').textContent = '最近击发记录';
+                    document.getElementById('disp-last-hint').textContent = '最近一口';
                 } else {
                     document.getElementById('rt-last-time').textContent = '--';
                     document.getElementById('rt-last-power').textContent = '--';
                     document.getElementById('rt-last-energy').textContent = '--';
                     document.getElementById('rt-last-temp').textContent = 'OFF';
-                    document.getElementById('disp-last-hint').textContent = '休眠已复位 (待点火)';
+                    document.getElementById('disp-last-hint').textContent = '待机就绪';
                 }
             }
 
@@ -1154,22 +1144,28 @@
             const bounds = getTimeBounds(currentFilterRange);
             const filtered = syncRecords.filter(r => r.timestamp >= bounds.start && r.timestamp <= bounds.end);
 
-            let totalPuffs = 0, totalTimeSec = 0;
+            let totalPuffs = 0, totalTimeSec = 0, totalEnergyWh = 0;
             filtered.forEach(r => {
                 totalPuffs += Number(r.deltaPuffs) || 0;
                 totalTimeSec += Number(r.deltaTimeSec) || 0;
+                totalEnergyWh += Number(r.deltaEnergyWh) || 0;
             });
 
             document.getElementById('filter-puffs').textContent = totalPuffs.toLocaleString();
             const avgTimeStr = (totalPuffs > 0 && totalTimeSec > 0) ? (totalTimeSec / totalPuffs).toFixed(2) : '--';
             document.getElementById('filter-avg-time').textContent = avgTimeStr;
-            document.getElementById('filter-sync-count').textContent = filtered.length.toLocaleString();
 
             const now = new Date();
             let days = 1;
             if (currentFilterRange === 'week') days = Math.max(1, now.getDay() === 0 ? 7 : now.getDay());
             else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
             document.getElementById('filter-rate').textContent = Math.round(totalPuffs / days);
+
+            // 周期内平均功率: P(W) = E(Wh) * 3600 / t(s)
+            const avgPowerStr = (totalTimeSec > 0 && totalEnergyWh > 0)
+                ? ((totalEnergyWh * 3600) / totalTimeSec).toFixed(1)
+                : '--';
+            document.getElementById('filter-avg-power').textContent = avgPowerStr;
 
             const chartWrapper = document.getElementById('chart-card-wrapper');
             if (currentFilterRange === 'week') {
@@ -1338,7 +1334,7 @@
                         <div class="asset-actions-footer">
                             <span>已记录 ${records.length} 次硬件同步</span>
                             <div style="display:flex; gap:8px;">
-                                <button class="apple-btn apple-btn-sm" onclick="renameDeviceFromLib('${chipId}')">改名</button>
+                                <button class="apple-btn apple-btn-sm" onclick="renameDeviceFromLib('${chipId}')">重命名</button>
                                 <button class="apple-btn apple-btn-sm apple-btn-destructive" onclick="deleteDeviceFromLib('${chipId}')">删除设备</button>
                             </div>
                         </div>
@@ -1766,20 +1762,9 @@
             }
         });
 
-        document.getElementById('btn-rename-dev').addEventListener('click', () => {
-            if (!activeChipId || !registry[activeChipId]) return;
-            const newName = prompt('修改当前主机名称：', registry[activeChipId].name);
-            if (newName && newName.trim()) {
-                registry[activeChipId].name = newName.trim();
-                saveData(K_REGISTRY, registry);
-                pushSystemStateToHardware();
-                renderDashboard();
-            }
-        });
-
         function renderLogList() {
             const container = document.getElementById('log-list');
-            document.getElementById('log-count').textContent = `${syncRecords.length} 笔记录`;
+            document.getElementById('log-count').textContent = `${syncRecords.length} 次同步`;
             if (syncRecords.length === 0) {
                 container.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 18px;">暂无同步记录</div>';
                 return;
