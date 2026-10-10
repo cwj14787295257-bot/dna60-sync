@@ -690,7 +690,7 @@
             <select id="select-reassign-target" class="apple-select" style="width: 100%;"></select>
             <div style="display: flex; gap: 8px; margin-top: 6px;">
                 <button class="apple-btn" style="flex:1;" id="btn-close-reassign">取消</button>
-                <button class="apple-btn apple-btn-primary" style="flex:2;" id="btn-confirm-reassign">确认转移</button>
+                <button class="apple-btn apple-btn-primary" style="flex:1;" id="btn-confirm-reassign">确认转移</button>
             </div>
         </div>
     </div>
@@ -755,11 +755,11 @@
         applyTheme(currentTheme);
         initDefaultAtos();
 
-        /* ================= 2. 标签页切换与滑动 ================= */
+        /* ================= 2. 标签页切换与移动端滑动手势 ================= */
         const tabs = ['dash', 'devices', 'atos', 'settings'];
         let activeTabIdx = 0;
 
-        tabs.forEach((t, idx) => {
+        tabs.forEach((t) => {
             document.getElementById(`tab-btn-${t}`).addEventListener('click', () => switchView(t));
         });
 
@@ -778,6 +778,46 @@
             }
             if (target === 'devices') renderDeviceLibrary();
             if (target === 'atos') renderAtomizerLibrary();
+        }
+
+        // 移动端左右滑动无缝切换面板实现
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        window.addEventListener('touchstart', (e) => {
+            // 若任意弹窗正处于显示状态，禁用手势切页
+            if (document.querySelector('.apple-modal-overlay.active')) return;
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            if (document.querySelector('.apple-modal-overlay.active')) return;
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+        }, { passive: true });
+
+        function handleSwipeGesture(startX, startY, endX, endY) {
+            const diffX = endX - startX;
+            const diffY = endY - startY;
+            const minSwipeDist = 55; // 最小有效滑动距离
+            const maxVerticalShift = 75; // 最大垂直偏移限制，防止上下滚动内容时误触发切页
+
+            // 严格识别横向主导的手势
+            if (Math.abs(diffX) >= minSwipeDist && Math.abs(diffY) <= maxVerticalShift) {
+                if (diffX < 0) {
+                    // 向左滑动 -> 切换至下一个标签页
+                    if (activeTabIdx < tabs.length - 1) {
+                        switchView(tabs[activeTabIdx + 1]);
+                    }
+                } else {
+                    // 向右滑动 -> 切换至上一个标签页
+                    if (activeTabIdx > 0) {
+                        switchView(tabs[activeTabIdx - 1]);
+                    }
+                }
+            }
         }
 
         document.getElementById('filter-tabs-container').addEventListener('click', (e) => {
@@ -1019,6 +1059,7 @@
             }
         }
 
+        // 强化增量计算与硬件外部清零容错
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
             if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) {
@@ -1032,21 +1073,21 @@
             const lastDevRec = syncRecords.find(r => r.chip_id === data.chipId);
 
             if (lastDevRec) {
-                // 1. 口数增量（包含外部清零容错）
+                // 1. 口数增量（包含清零容错）
                 if (data.dev.p < lastDevRec.devPuffs) {
                     deltaPuffs = data.puffs || 0;
                 } else {
                     deltaPuffs = data.dev.p - lastDevRec.devPuffs;
                 }
 
-                // 2. 能量增量（包含外部清零容错）
+                // 2. 能量增量（包含清零容错）
                 if (data.dev.e < lastDevRec.devEnergyMwh) {
                     deltaEnergyWh = Math.max(0, (data.dev.e || 0) / 1000.0);
                 } else {
                     deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
                 }
 
-                // 3. 点火时间增量（包含外部清零容错）
+                // 3. 点火时间增量（包含清零容错）
                 if (lastDevRec.devTimeSec !== undefined) {
                     if (data.dev.t < lastDevRec.devTimeSec) {
                         deltaTimeSec = Math.max(0, data.dev.t || 0);
@@ -1205,7 +1246,6 @@
             else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
             document.getElementById('filter-rate').textContent = Math.round(totalPuffs / days);
 
-            // 周期内平均功率: P(W) = E(Wh) * 3600 / t(s)
             const avgPowerStr = (totalTimeSec > 0 && totalEnergyWh > 0)
                 ? ((totalEnergyWh * 3600) / totalTimeSec).toFixed(1)
                 : '--';
