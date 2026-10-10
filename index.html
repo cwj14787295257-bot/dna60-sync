@@ -527,7 +527,7 @@
                 </div>
             </div>
 
-            <!-- 3. 最近抽吸特征卡片 (置于 Usage Analytics 下方) -->
+            <!-- 3. 最近抽吸特征卡片 -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Last Puff Status</span>
@@ -603,6 +603,21 @@
                 </div>
 
                 <button class="apple-btn apple-btn-primary" id="btn-start-ota" style="width: 100%;">开始无线推送固件</button>
+            </div>
+
+            <div class="apple-card">
+                <span class="card-label-subtle">Coil & Atomizer Reconciliation</span>
+                <h3 style="font-size: 17px; font-weight: 700;">雾化器口数对齐校准</h3>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                    根据时间线已存的历史同步记录，重新全量校准并对齐当前各雾化器的实际口数。
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="settings-item-btn" id="btn-reconcile-puffs">
+                        <span>按历史记录对齐雾化器口数</span>
+                        <span style="color: var(--apple-blue); font-size: 12px;">立即对齐</span>
+                    </button>
+                </div>
             </div>
 
             <div class="apple-card">
@@ -780,12 +795,10 @@
             if (target === 'atos') renderAtomizerLibrary();
         }
 
-        // 移动端左右滑动无缝切换面板实现
         let touchStartX = 0;
         let touchStartY = 0;
 
         window.addEventListener('touchstart', (e) => {
-            // 若任意弹窗正处于显示状态，禁用手势切页
             if (document.querySelector('.apple-modal-overlay.active')) return;
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
@@ -801,21 +814,14 @@
         function handleSwipeGesture(startX, startY, endX, endY) {
             const diffX = endX - startX;
             const diffY = endY - startY;
-            const minSwipeDist = 55; // 最小有效滑动距离
-            const maxVerticalShift = 75; // 最大垂直偏移限制，防止上下滚动内容时误触发切页
+            const minSwipeDist = 55;
+            const maxVerticalShift = 75;
 
-            // 严格识别横向主导的手势
             if (Math.abs(diffX) >= minSwipeDist && Math.abs(diffY) <= maxVerticalShift) {
                 if (diffX < 0) {
-                    // 向左滑动 -> 切换至下一个标签页
-                    if (activeTabIdx < tabs.length - 1) {
-                        switchView(tabs[activeTabIdx + 1]);
-                    }
+                    if (activeTabIdx < tabs.length - 1) switchView(tabs[activeTabIdx + 1]);
                 } else {
-                    // 向右滑动 -> 切换至上一个标签页
-                    if (activeTabIdx > 0) {
-                        switchView(tabs[activeTabIdx - 1]);
-                    }
+                    if (activeTabIdx > 0) switchView(tabs[activeTabIdx - 1]);
                 }
             }
         }
@@ -944,7 +950,6 @@
             try {
                 const d = JSON.parse(raw);
 
-                // 接收 Flash 分片配置
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -985,7 +990,6 @@
                     return;
                 }
 
-                // 优先检查物理连接状态：断开则重置界面并不做弹窗判断
                 if (d.connected === false) {
                     if (activeChipId && registry[activeChipId]) {
                         document.getElementById('disp-dev-name').textContent = `${registry[activeChipId].name} (已断开)`;
@@ -1002,14 +1006,11 @@
                     return;
                 }
 
-                // 只有真实序列号才认定为合法连接
                 const rawChipId = (d.chip_id || d.id || '').trim();
-                if (!rawChipId || rawChipId === 'UNKNOWN') {
-                    return;
-                }
+                if (!rawChipId || rawChipId === 'UNKNOWN') return;
 
                 const chipId = rawChipId;
-                const detectedModel = d.model || 'DNA 60';
+                const detectedModel = d.model || 'DNA';
                 const syncId = Number(d.sync || d.sync_id) || 0;
 
                 if (d.battery !== undefined) updateBatteryUI(d.battery);
@@ -1034,7 +1035,6 @@
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
                 lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, res: rawRes, ts: recordTs };
 
-                // 未登记的真实主板拉起命名弹窗
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
                     const modal = document.getElementById('modal-naming');
@@ -1059,10 +1059,10 @@
             }
         }
 
-        // 强化增量计算与硬件外部清零容错
+        // 核心修复：防抖穿透与增量计算
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
-            if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) {
+            if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId && lastRec.devPuffs === data.dev.p) {
                 renderDashboard();
                 return;
             }
@@ -1073,21 +1073,18 @@
             const lastDevRec = syncRecords.find(r => r.chip_id === data.chipId);
 
             if (lastDevRec) {
-                // 1. 口数增量（包含清零容错）
                 if (data.dev.p < lastDevRec.devPuffs) {
                     deltaPuffs = data.puffs || 0;
                 } else {
                     deltaPuffs = data.dev.p - lastDevRec.devPuffs;
                 }
 
-                // 2. 能量增量（包含清零容错）
                 if (data.dev.e < lastDevRec.devEnergyMwh) {
                     deltaEnergyWh = Math.max(0, (data.dev.e || 0) / 1000.0);
                 } else {
                     deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
                 }
 
-                // 3. 点火时间增量（包含清零容错）
                 if (lastDevRec.devTimeSec !== undefined) {
                     if (data.dev.t < lastDevRec.devTimeSec) {
                         deltaTimeSec = Math.max(0, data.dev.t || 0);
@@ -1101,7 +1098,12 @@
                 deltaTimeSec = data.last.t;
             }
 
-            const targetAtoId = devAtoMap[data.chipId] || (atomizers[0]?.id);
+            const fallbackAtoId = localStorage.getItem('dna_selected_ato_fallback') || atomizers[0]?.id;
+            const targetAtoId = devAtoMap[data.chipId] || fallbackAtoId;
+            if (!devAtoMap[data.chipId] && targetAtoId) {
+                devAtoMap[data.chipId] = targetAtoId;
+                saveData(K_DEV_ATO, devAtoMap);
+            }
             const currentAto = getAto(targetAtoId);
 
             const newRec = {
@@ -1138,7 +1140,6 @@
             renderDashboard();
         }
 
-        // UTF-8 字节感知切片辅助函数，单块实际字节严格受控
         function splitStringByUtf8Bytes(str, maxBytes) {
             const encoder = new TextEncoder();
             const chunks = [];
@@ -1159,7 +1160,6 @@
             return chunks;
         }
 
-        // 采用 64 字节安全预算分块推送到 ESP32，消除 BLE MTU 溢出
         async function pushSystemStateToHardware() {
             if (!bleChar) return;
             const payload = JSON.stringify({ reg: registry, atos: atomizers, map: devAtoMap });
@@ -1183,16 +1183,20 @@
 
             const atoSelect = document.getElementById('select-active-ato');
             atoSelect.innerHTML = atomizers.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-            const currentAtoId = devAtoMap[activeChipId] || atomizers[0]?.id;
+            
+            const fallbackAtoId = localStorage.getItem('dna_selected_ato_fallback') || atomizers[0]?.id;
+            const currentAtoId = (activeChipId && devAtoMap[activeChipId]) ? devAtoMap[activeChipId] : fallbackAtoId;
             atoSelect.value = currentAtoId;
 
             atoSelect.onchange = (e) => {
+                const selectedId = e.target.value;
+                localStorage.setItem('dna_selected_ato_fallback', selectedId);
                 if (activeChipId) {
-                    devAtoMap[activeChipId] = e.target.value;
+                    devAtoMap[activeChipId] = selectedId;
                     saveData(K_DEV_ATO, devAtoMap);
                     pushSystemStateToHardware();
-                    renderDashboard();
                 }
+                renderDashboard();
             };
 
             const curAto = getAto(currentAtoId);
@@ -1390,7 +1394,7 @@
 
                 const latestRec = records[0];
                 const boardLifetimePuffs = latestRec ? Number(latestRec.devPuffs) || 0 : '--';
-                const modelBadge = dev.model || 'DNA 60';
+                const modelBadge = dev.model || 'DNA';
 
                 return `
                     <div class="asset-card ${isCurrent ? 'active-chip' : ''}">
@@ -1458,8 +1462,8 @@
         window.showLifetimeModal = function(chipId) {
             const dev = registry[chipId];
             const snap = dev?.lastSnapshot || lastLiveSnapshot;
-            if (!snap) { return; }
-            document.getElementById('lt-model').textContent = dev.model || snap.model || 'DNA 60';
+            if (!snap) return;
+            document.getElementById('lt-model').textContent = dev.model || snap.model || 'DNA';
             document.getElementById('lt-chip-id').textContent = chipId;
             document.getElementById('lt-dev-puffs').textContent = `${(snap.dev?.p || snap.dev?.puffs || 0).toLocaleString()} 口`;
             document.getElementById('lt-dev-time').textContent = `${(snap.dev?.t || 0).toFixed(1)}s (约 ${(((snap.dev?.t || 0))/3600).toFixed(2)} 小时)`;
@@ -1565,6 +1569,33 @@
         };
 
         /* ================= 8. “设置”面板功能 (OTA 强化与数据管理) ================= */
+        document.getElementById('btn-reconcile-puffs').addEventListener('click', () => {
+            if (syncRecords.length === 0) {
+                alert('暂无同步历史，无需对齐。');
+                return;
+            }
+
+            const atoPuffMap = {};
+            syncRecords.forEach(r => {
+                const aid = r.atomizer_id || atomizers[0]?.id;
+                atoPuffMap[aid] = (atoPuffMap[aid] || 0) + (Number(r.deltaPuffs) || 0);
+            });
+
+            atomizers.forEach(a => {
+                const total = atoPuffMap[a.id] || 0;
+                a.total_puffs = total;
+                if (!a.history_resets || a.history_resets.length === 0) {
+                    a.coil_puffs = total;
+                }
+            });
+
+            saveData(K_ATOS, atomizers);
+            pushSystemStateToHardware();
+            renderDashboard();
+            renderAtomizerLibrary();
+            alert('已成功根据历史同步记录重新校准各雾化器口数！');
+        });
+
         document.getElementById('btn-start-ota').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-ota');
             if (!fileInput.files.length) {
@@ -1585,14 +1616,12 @@
             statusText.textContent = `开始推送... 大小: ${(bytes.length/1024).toFixed(1)} KB`;
 
             try {
-                // 1. 发送启动控制帧
                 await sendBleCommand({ cmd: "OTA_START", size: bytes.length });
                 await new Promise(r => setTimeout(r, 600));
 
                 const chunkSize = 128;
                 const totalPackets = Math.ceil(bytes.length / chunkSize);
 
-                // 2. 发送二进制固件切片流
                 for (let i = 0; i < totalPackets; i++) {
                     const chunk = bytes.slice(i * chunkSize, (i + 1) * chunkSize);
                     if (bleChar.writeValueWithResponse) {
@@ -1609,7 +1638,6 @@
                     await new Promise(r => setTimeout(r, 20));
                 }
 
-                // 3. 发送完成控制帧（容忍重启链路断开）
                 statusText.textContent = '固件上传完毕，硬件校验重启中...';
                 pBar.style.width = '100%';
                 
@@ -1716,12 +1744,29 @@
             for (const cid in groups) {
                 groups[cid].sort((a, b) => ((a.ts || 0) * 1000) - ((b.ts || 0) * 1000));
                 let prevPuffs = 0, prevEnergy = 0, prevTime = 0;
+                let groupAccumPuffs = 0;
+                const fallbackAtoId = localStorage.getItem('dna_selected_ato_fallback') || atomizers[0]?.id;
+                const targetAto = getAto(devAtoMap[cid] || fallbackAtoId);
+
                 groups[cid].forEach((item, index) => {
                     const syncId = Number(item.sync || item.sync_id) || 0;
                     const trueTs = (item.ts && Number(item.ts) > 100000000) ? (Number(item.ts) * 1000) : Date.now();
                     const devP = Array.isArray(item.dev) ? item.dev[0] : (item.dev?.p || 0);
                     const devE = Array.isArray(item.dev) ? item.dev[1] : (item.dev?.e || 0);
                     const devT = Array.isArray(item.dev) ? item.dev[2] : (item.dev?.t || 0);
+
+                    if (!registry[cid]) {
+                        registry[cid] = {
+                            name: `${item.model || 'DNA'} 主机`,
+                            model: item.model || 'DNA',
+                            registered_at: trueTs,
+                            lastSnapshot: null
+                        };
+                        saveData(K_REGISTRY, registry);
+                    } else if (item.model && (!registry[cid].model || registry[cid].model === 'DNA 60' || registry[cid].model === 'DNA')) {
+                        registry[cid].model = item.model;
+                        saveData(K_REGISTRY, registry);
+                    }
 
                     let dP = 0, dE = 0, dT = 0;
                     if (index > 0) {
@@ -1742,11 +1787,12 @@
                         syncRecords[existIdx].deltaEnergyWh = dE;
                         syncRecords[existIdx].deltaTimeSec = dT;
                     } else {
+                        groupAccumPuffs += dP;
                         syncRecords.push({
                             id: 'rec_' + trueTs + '_' + syncId,
                             sync_id: syncId,
                             chip_id: cid,
-                            model: item.model || 'DNA 60',
+                            model: item.model || 'DNA',
                             timestamp: trueTs,
                             timeStr: formatDate(new Date(trueTs)),
                             puffs: Number(item.puffs) || 0,
@@ -1756,10 +1802,17 @@
                             deltaPuffs: dP,
                             deltaEnergyWh: dE,
                             deltaTimeSec: dT,
-                            atomizer_id: devAtoMap[cid] || atomizers[0]?.id
+                            atomizer_id: devAtoMap[cid] || fallbackAtoId
                         });
                     }
                 });
+
+                if (groupAccumPuffs > 0 && targetAto) {
+                    targetAto.total_puffs = (Number(targetAto.total_puffs) || 0) + groupAccumPuffs;
+                    targetAto.coil_puffs = (Number(targetAto.coil_puffs) || 0) + groupAccumPuffs;
+                    saveData(K_ATOS, atomizers);
+                    pushSystemStateToHardware();
+                }
             }
             syncRecords.sort((a, b) => b.timestamp - a.timestamp);
             saveData(K_RECORDS, syncRecords);
@@ -1767,7 +1820,8 @@
 
         /* ================= 9. 命名与换丝逻辑 ================= */
         document.getElementById('btn-reset-coil').addEventListener('click', () => {
-            const currentAtoId = devAtoMap[activeChipId] || atomizers[0]?.id;
+            const fallbackAtoId = localStorage.getItem('dna_selected_ato_fallback') || atomizers[0]?.id;
+            const currentAtoId = (activeChipId && devAtoMap[activeChipId]) ? devAtoMap[activeChipId] : fallbackAtoId;
             const ato = getAto(currentAtoId);
             if (!ato) return;
             if (confirm(`确定为【${ato.name}】换丝清零吗？\n当前线圈已抽吸: ${ato.coil_puffs || 0} 口`)) {
@@ -1826,7 +1880,7 @@
                 return;
             }
 
-            const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA 60';
+            const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA';
             const name = document.getElementById('input-dev-name').value.trim() || `${model} 主机`;
 
             registry[targetId] = {
@@ -1853,7 +1907,7 @@
         document.getElementById('btn-cancel-naming').addEventListener('click', () => {
             const targetId = (pendingPayload && pendingPayload.chipId) ? pendingPayload.chipId : (activeChipId || lastLiveSnapshot?.chipId);
             if (targetId && targetId !== 'UNKNOWN') {
-                const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA 60';
+                const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA';
                 registry[targetId] = {
                     name: `${model} 主机`,
                     model: model,
