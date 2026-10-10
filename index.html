@@ -944,6 +944,7 @@
                     return;
                 }
 
+                // 物理断开拦截
                 if (d.connected === false) {
                     if (activeChipId && registry[activeChipId]) {
                         document.getElementById('disp-dev-name').textContent = `${registry[activeChipId].name} (已断开)`;
@@ -1015,6 +1016,7 @@
             }
         }
 
+        // 核心修复 (Bug 7): 强化增量计算与硬件外部清零容错
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
             if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) {
@@ -1028,10 +1030,27 @@
             const lastDevRec = syncRecords.find(r => r.chip_id === data.chipId);
 
             if (lastDevRec) {
-                deltaPuffs = (data.dev.p >= lastDevRec.devPuffs) ? (data.dev.p - lastDevRec.devPuffs) : data.puffs;
-                deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
-                if (lastDevRec.devTimeSec !== undefined && data.dev.t >= lastDevRec.devTimeSec) {
-                    deltaTimeSec = Math.max(0, data.dev.t - lastDevRec.devTimeSec);
+                // 1. 口数增量（包含清零容错）
+                if (data.dev.p < lastDevRec.devPuffs) {
+                    deltaPuffs = data.puffs || 0; // 发生外部清零
+                } else {
+                    deltaPuffs = data.dev.p - lastDevRec.devPuffs;
+                }
+
+                // 2. 能量增量（包含清零容错，避免死锁为0）
+                if (data.dev.e < lastDevRec.devEnergyMwh) {
+                    deltaEnergyWh = Math.max(0, (data.dev.e || 0) / 1000.0); // 发生外部清零
+                } else {
+                    deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
+                }
+
+                // 3. 点火时间增量（包含清零容错）
+                if (lastDevRec.devTimeSec !== undefined) {
+                    if (data.dev.t < lastDevRec.devTimeSec) {
+                        deltaTimeSec = Math.max(0, data.dev.t || 0); // 发生外部清零
+                    } else {
+                        deltaTimeSec = Math.max(0, data.dev.t - lastDevRec.devTimeSec);
+                    }
                 } else if (deltaPuffs === 1 && data.last && data.last.t > 0) {
                     deltaTimeSec = data.last.t;
                 }
@@ -1076,13 +1095,36 @@
             renderDashboard();
         }
 
+        // 核心修复 (Bug 3): UTF-8 字节感知切片辅助函数，单块实际字节严格受控
+        function splitStringByUtf8Bytes(str, maxBytes) {
+            const encoder = new TextEncoder();
+            const chunks = [];
+            let cur = "";
+            let curBytes = 0;
+            for (const ch of str) {
+                const chBytes = encoder.encode(ch).length;
+                if (curBytes + chBytes > maxBytes) {
+                    chunks.push(cur);
+                    cur = ch;
+                    curBytes = chBytes;
+                } else {
+                    cur += ch;
+                    curBytes += chBytes;
+                }
+            }
+            if (cur) chunks.push(cur);
+            return chunks;
+        }
+
+        // 核心修复 (Bug 3): 采用 64 字节安全预算分块推送到 ESP32，彻底根除 BLE MTU 溢出
         async function pushSystemStateToHardware() {
             if (!bleChar) return;
             const payload = JSON.stringify({ reg: registry, atos: atomizers, map: devAtoMap });
-            const chunkSize = 110;
-            const totalChunks = Math.ceil(payload.length / chunkSize);
+            const chunkList = splitStringByUtf8Bytes(payload, 64);
+            const totalChunks = chunkList.length;
+
             for (let i = 0; i < totalChunks; i++) {
-                const chunkStr = payload.slice(i * chunkSize, (i + 1) * chunkSize);
+                const chunkStr = chunkList[i];
                 await sendBleCommand({ cmd: "CFG_CHUNK", i: i, n: totalChunks, d: chunkStr });
                 await new Promise(r => setTimeout(r, 45));
             }
@@ -1480,10 +1522,17 @@
             }
         };
 
-        /* ================= 8. “设置”面板功能 ================= */
+        /* ================= 8. “设置”面板功能 (OTA 强化与数据管理) ================= */
         document.getElementById('btn-start-ota').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-ota');
-            if (!fileInput.files.length || !bleChar) return;
+            if (!fileInput.files.length) {
+                alert('请先选择编译生成的固件 (.bin) 文件！');
+                return;
+            }
+            if (!bleChar) {
+                alert('请先连接设备的蓝牙后再推送固件！');
+                return;
+            }
 
             const file = fileInput.files[0];
             const buffer = await file.arrayBuffer();
@@ -1493,30 +1542,41 @@
             const pBar = document.getElementById('ota-progress-bar');
             statusText.textContent = `开始推送... 大小: ${(bytes.length/1024).toFixed(1)} KB`;
 
-            await sendBleCommand({ cmd: "OTA_START", size: bytes.length });
-            await new Promise(r => setTimeout(r, 600));
+            try {
+                // 1. 发送启动控制帧
+                await sendBleCommand({ cmd: "OTA_START", size: bytes.length });
+                await new Promise(r => setTimeout(r, 600));
 
-            const chunkSize = 128;
-            const totalPackets = Math.ceil(bytes.length / chunkSize);
+                const chunkSize = 128;
+                const totalPackets = Math.ceil(bytes.length / chunkSize);
 
-            for (let i = 0; i < totalPackets; i++) {
-                const chunk = bytes.slice(i * chunkSize, (i + 1) * chunkSize);
-                if (bleChar.writeValueWithResponse) {
-                    await bleChar.writeValueWithResponse(chunk);
-                } else {
-                    await bleChar.writeValue(chunk);
+                // 2. 发送二进制固件切片流
+                for (let i = 0; i < totalPackets; i++) {
+                    const chunk = bytes.slice(i * chunkSize, (i + 1) * chunkSize);
+                    if (bleChar.writeValueWithResponse) {
+                        await bleChar.writeValueWithResponse(chunk);
+                    } else {
+                        await bleChar.writeValue(chunk);
+                    }
+
+                    if (i % 8 === 0 || i === totalPackets - 1) {
+                        const percent = Math.round(((i + 1) / totalPackets) * 100);
+                        pBar.style.width = `${percent}%`;
+                        statusText.textContent = `推送中: ${percent}% (${i+1}/${totalPackets} 包)`;
+                    }
+                    await new Promise(r => setTimeout(r, 20));
                 }
-                if (i % 8 === 0 || i === totalPackets - 1) {
-                    const percent = Math.round(((i + 1) / totalPackets) * 100);
-                    pBar.style.width = `${percent}%`;
-                    statusText.textContent = `推送中: ${percent}% (${i+1}/${totalPackets} 包)`;
-                }
-                await new Promise(r => setTimeout(r, 20));
+
+                // 3. 发送完成控制帧
+                statusText.textContent = '固件上传完毕，硬件校验重启中...';
+                await sendBleCommand({ cmd: "OTA_END" });
+                pBar.style.width = '100%';
+                alert('OTA 推送完成！硬件正在执行分区切换并自动重启。');
+            } catch (err) {
+                console.error("OTA 传输失败:", err);
+                statusText.textContent = '推送中断或蓝牙通信异常';
+                alert('OTA 传输发生错误，请重新连接设备并重试。');
             }
-
-            statusText.textContent = '固件上传完毕，硬件校验重启中...';
-            await sendBleCommand({ cmd: "OTA_END" });
-            pBar.style.width = '100%';
         });
 
         document.getElementById('btn-clear-current-records').addEventListener('click', () => {
