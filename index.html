@@ -474,7 +474,7 @@
 
                 <div class="coil-shelf">
                     <div>
-                        <div style="font-size: 12px; color: var(--text-secondary);" id="disp-coil-spec">线圈: --</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);" id="disp-coil-spec">搭载: 默认线圈</div>
                         <div style="margin-top: 4px;">
                             <span class="coil-puffs-huge" id="disp-coil-puffs">0</span>
                             <span class="coil-puffs-unit">口</span>
@@ -533,7 +533,7 @@
                 </div>
             </div>
 
-            <!-- 3. 最近抽吸特征卡片 (已调整放置在 Usage Analytics 之后) -->
+            <!-- 3. 最近抽吸特征卡片 (置于 Usage Analytics 下方) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Last Puff Status</span>
@@ -593,7 +593,6 @@
 
         <!-- 视图 4: 设置 -->
         <main class="view-content hidden" id="view-settings">
-            <!-- 板块 1: 固件升级 -->
             <div class="apple-card">
                 <span class="card-label-subtle">Firmware Upgrade</span>
                 <h3 style="font-size: 17px; font-weight: 700;">无线固件升级 (OTA)</h3>
@@ -612,7 +611,6 @@
                 <button class="apple-btn apple-btn-primary" id="btn-start-ota" style="width: 100%;">开始无线推送固件</button>
             </div>
 
-            <!-- 板块 2: 清除 Flash / 浏览器数据 -->
             <div class="apple-card">
                 <span class="card-label-subtle">Storage & Reset</span>
                 <h3 style="font-size: 17px; font-weight: 700;">清除 Flash / 浏览器数据</h3>
@@ -632,7 +630,6 @@
                 </div>
             </div>
 
-            <!-- 板块 3: Flash 数据备份与导入 -->
             <div class="apple-card">
                 <span class="card-label-subtle">Backup & Restore</span>
                 <h3 style="font-size: 17px; font-weight: 700;">Flash 数据备份与导入</h3>
@@ -913,7 +910,7 @@
             try {
                 const d = JSON.parse(raw);
 
-                // 接收 Flash 分片配置：增量合并，防止冲刷本地设备列表
+                // 接收 Flash 分片配置
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -958,7 +955,6 @@
                 const rawChipId = (d.chip_id || d.id || '').trim();
                 const detectedModel = d.model || 'DNA 60';
 
-                // 优先采用真实读取出的原厂序列号
                 const chipId = (rawChipId && rawChipId !== 'UNKNOWN') ? rawChipId : `${detectedModel}_0412`;
 
                 if (d.battery !== undefined) updateBatteryUI(d.battery);
@@ -976,7 +972,6 @@
 
                 if (syncId === 0) return;
 
-                // 优雅解构与容错：休眠或零点火状态下各字段安全置零
                 const rawLast = d.last || {};
                 const last = Array.isArray(rawLast)
                     ? { t: rawLast[0] || 0, w: rawLast[1] || 0, e: rawLast[2] || 0, c: rawLast[3] || 0 }
@@ -992,10 +987,11 @@
                 const devT = d.dev ? (d.dev.t || 0) : 0;
                 const dev = { p: devP, e: devE, t: devT };
 
+                const rawRes = d.res !== undefined ? Number(d.res) : (lastLiveSnapshot?.res || 0);
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
-                lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, ts: recordTs };
+                lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, res: rawRes, ts: recordTs };
 
-                // 防重复弹窗拦截器
+                // 首次识别弹窗防重复拦截
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
                     const modal = document.getElementById('modal-naming');
@@ -1119,11 +1115,15 @@
 
             const curAto = getAto(currentAtoId);
             if (curAto) {
-                document.getElementById('disp-coil-spec').textContent = `搭载: ${curAto.coil_spec || '默认线圈'}`;
+                // 核心更新：在线圈模块“搭载：xxx”后面拼接动态读取的电阻值
+                const resStr = (lastLiveSnapshot && lastLiveSnapshot.res && lastLiveSnapshot.res > 0)
+                    ? ` (${Number(lastLiveSnapshot.res).toFixed(2)}Ω)`
+                    : '';
+                document.getElementById('disp-coil-spec').textContent = `搭载: ${curAto.coil_spec || '默认线圈'}${resStr}`;
                 document.getElementById('disp-coil-puffs').textContent = (Number(curAto.coil_puffs) || 0).toLocaleString();
             }
 
-            // 安全渲染最近单口特征：休眠未击发时安全显示为 '--'
+            // 渲染最近单口状态
             if (lastLiveSnapshot && lastLiveSnapshot.last) {
                 const l = lastLiveSnapshot.last;
                 if (l.t > 0 || l.w > 0 || l.e > 0) {
