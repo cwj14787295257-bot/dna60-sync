@@ -606,21 +606,6 @@
             </div>
 
             <div class="apple-card">
-                <span class="card-label-subtle">Coil & Atomizer Reconciliation</span>
-                <h3 style="font-size: 17px; font-weight: 700;">雾化器口数对齐校准</h3>
-                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                    根据时间线已存的历史同步记录，重新全量校准并对齐当前各雾化器的实际口数。
-                </p>
-
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="settings-item-btn" id="btn-reconcile-puffs">
-                        <span>按历史记录对齐雾化器口数</span>
-                        <span style="color: var(--apple-blue); font-size: 12px;">立即对齐</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="apple-card">
                 <span class="card-label-subtle">Storage & Reset</span>
                 <h3 style="font-size: 17px; font-weight: 700;">清除 Flash / 浏览器数据</h3>
                 <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
@@ -739,12 +724,12 @@
         const themeCycle = ['auto', 'light', 'dark'];
         let currentTheme = localStorage.getItem(K_THEME) || 'auto';
 
-        const themeBtn = document.getElementById('btn-theme-single');
-        const themeSvg = document.getElementById('theme-icon-svg');
-
         function applyTheme(mode) {
             currentTheme = mode;
             localStorage.setItem(K_THEME, mode);
+
+            const themeBtn = document.getElementById('btn-theme-single');
+            const themeSvg = document.getElementById('theme-icon-svg');
 
             if (mode === 'auto') {
                 document.documentElement.setAttribute('data-theme', 'auto');
@@ -762,7 +747,7 @@
             if (currentFilterRange === 'week') drawWeekChart();
         }
 
-        themeBtn.addEventListener('click', () => {
+        document.getElementById('btn-theme-single').addEventListener('click', () => {
             const nextIdx = (themeCycle.indexOf(currentTheme) + 1) % themeCycle.length;
             applyTheme(themeCycle[nextIdx]);
         });
@@ -1539,7 +1524,7 @@
         };
 
         window.deleteAto = function(atoId) {
-            if (atomizers.length <= 1) { return; }
+            if (atomizers.length <= 1) return;
             const ato = getAto(atoId);
             if (!ato) return;
             if (confirm(`确定要彻底删除雾化器【${ato.name}】吗？`)) {
@@ -1569,33 +1554,6 @@
         };
 
         /* ================= 8. “设置”面板功能 (OTA 强化与数据管理) ================= */
-        document.getElementById('btn-reconcile-puffs').addEventListener('click', () => {
-            if (syncRecords.length === 0) {
-                alert('暂无同步历史，无需对齐。');
-                return;
-            }
-
-            const atoPuffMap = {};
-            syncRecords.forEach(r => {
-                const aid = r.atomizer_id || atomizers[0]?.id;
-                atoPuffMap[aid] = (atoPuffMap[aid] || 0) + (Number(r.deltaPuffs) || 0);
-            });
-
-            atomizers.forEach(a => {
-                const total = atoPuffMap[a.id] || 0;
-                a.total_puffs = total;
-                if (!a.history_resets || a.history_resets.length === 0) {
-                    a.coil_puffs = total;
-                }
-            });
-
-            saveData(K_ATOS, atomizers);
-            pushSystemStateToHardware();
-            renderDashboard();
-            renderAtomizerLibrary();
-            alert('已成功根据历史同步记录重新校准各雾化器口数！');
-        });
-
         document.getElementById('btn-start-ota').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-ota');
             if (!fileInput.files.length) {
