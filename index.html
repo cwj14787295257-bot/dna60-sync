@@ -174,7 +174,6 @@
             gap: 8px;
         }
 
-        /* 极简单图标主题切换按钮 */
         .btn-theme-toggle {
             background: var(--fill-secondary);
             border: 1px solid var(--border-subtle);
@@ -241,7 +240,6 @@
             font-weight: 600;
         }
 
-        /* 视图淡入轻动画 */
         .view-content {
             display: flex;
             flex-direction: column;
@@ -252,7 +250,6 @@
 
         @keyframes viewFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 卡片设计 */
         .apple-card {
             background: var(--card-bg);
             backdrop-filter: blur(25px);
@@ -272,7 +269,7 @@
         .hero-device-header { display: flex; justify-content: space-between; align-items: center; }
         .device-headline { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
 
-        /* iOS 原生圆角风格电池图标与电量指示 */
+        /* iOS 原生圆角风格电池指示器 */
         .battery-badge-wrap {
             display: inline-flex;
             align-items: center;
@@ -373,13 +370,11 @@
         .chart-canvas-wrap { width: 100%; height: 160px; position: relative; }
         canvas { width: 100%; height: 100%; display: block; }
 
-        /* 设备档案卡片 */
         .asset-card { background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
         .asset-card.active-chip { border-color: rgba(0, 113, 227, 0.45); box-shadow: 0 0 0 1px rgba(0, 113, 227, 0.15); }
         .asset-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .asset-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
-        /* 具体 DNA 型号大徽标 */
         .model-pill-badge {
             font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 980px;
             background: rgba(0, 113, 227, 0.1); color: var(--apple-blue); border: 1px solid rgba(0, 113, 227, 0.25);
@@ -393,7 +388,6 @@
         .timeline-scroll { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .timeline-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--fill-secondary); border-radius: 12px; font-size: 12px; }
 
-        /* 设置面板按钮列表 */
         .settings-item-btn {
             background: var(--fill-secondary); border: 1px solid var(--border-subtle); border-radius: 14px;
             color: var(--text-primary); padding: 12px 14px; font-size: 13px; font-weight: 600;
@@ -402,7 +396,6 @@
         .settings-item-btn:hover { border-color: var(--border-hover); }
         .settings-item-btn.danger { color: var(--apple-red); border-color: rgba(255, 59, 48, 0.15); background: var(--apple-red-bg); }
 
-        /* 模态弹窗 */
         .apple-modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
@@ -437,8 +430,7 @@
                     </div>
 
                     <div class="nav-actions-group">
-                        <!-- 单色简约主题切换图标按钮 -->
-                        <button class="btn-theme-toggle" id="btn-theme-single" title="切换主题外观">
+                        <button class="btn-theme-toggle" id="btn-theme-single" title="切换外观模式">
                             <svg viewBox="0 0 24 24" id="theme-icon-svg">
                                 <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
                             </svg>
@@ -466,7 +458,6 @@
 
                 <div class="device-headline">
                     <span id="disp-dev-name">等待连接设备...</span>
-                    <!-- 设备电量百分比 + iOS 原生圆角风格电池图标 -->
                     <div class="battery-badge-wrap" id="disp-battery-wrap">
                         <span class="battery-text" id="disp-bat-text">--%</span>
                         <div class="battery-ios-icon">
@@ -498,13 +489,39 @@
                 <span class="action-link" id="btn-reassign">更改归属</span>
             </div>
 
+            <!-- 最近抽吸特征卡片（优雅处理休眠空数据） -->
+            <div class="apple-card">
+                <div class="hero-device-header">
+                    <span class="card-label-subtle">Last Puff Status</span>
+                    <span style="font-size: 11px; color: var(--text-secondary);" id="disp-last-hint">待机就绪</span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-time">--</div>
+                        <div class="metric-cell-label">单口时长 (s)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-power">--</div>
+                        <div class="metric-cell-label">单口功率 (W)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-energy">--</div>
+                        <div class="metric-cell-label">单口能耗 (mWh)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-temp">OFF</div>
+                        <div class="metric-cell-label">发热丝温度</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 使用数据板块 -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Usage Analytics</span>
                     <div style="display:flex; background:var(--fill-secondary); padding:2px; border-radius:980px; gap:1px;" id="filter-tabs-container">
                         <button class="theme-opt-btn" data-range="day" style="background:none; border:none; color:var(--text-secondary); padding:4px 8px; border-radius:980px; font-size:11px; cursor:pointer;">今日</button>
-                        <button class="theme-opt-btn active" data-range="week" style="background:none; border:none; color:var(--text-secondary); padding:4px 8px; border-radius:980px; font-size:11px; cursor:pointer;">本周</button>
+                        <button class="theme-opt-btn active" data-range="week" style="background:var(--card-solid); font-weight:600; color:var(--text-primary); border:none; padding:4px 8px; border-radius:980px; font-size:11px; cursor:pointer;">本周</button>
                         <button class="theme-opt-btn" data-range="month" style="background:none; border:none; color:var(--text-secondary); padding:4px 8px; border-radius:980px; font-size:11px; cursor:pointer;">本月</button>
                         <button class="theme-opt-btn" data-range="all" style="background:none; border:none; color:var(--text-secondary); padding:4px 8px; border-radius:980px; font-size:11px; cursor:pointer;">全部</button>
                     </div>
@@ -572,7 +589,7 @@
             <div id="atomizers-list-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </main>
 
-        <!-- 视图 4: 设置 (原固件面板重构: 固件升级、清除数据、数据备份与导入) -->
+        <!-- 视图 4: 设置 (固件升级、清除数据、数据备份与导入) -->
         <main class="view-content hidden" id="view-settings">
             <!-- 板块 1: 固件升级 -->
             <div class="apple-card">
@@ -662,10 +679,13 @@
     <!-- 弹窗 2: 新芯片自命名 -->
     <div class="apple-modal-overlay" id="modal-naming">
         <div class="apple-modal-window">
-            <h3 style="font-size: 17px; font-weight: 700;">发现全新硬件</h3>
-            <p style="font-size: 13px; color: var(--text-secondary);" id="naming-prompt-desc">检测到尚未登记的 DNA 主板，请为其指定名称：</p>
-            <input type="text" id="input-dev-name" class="apple-input" placeholder="设备名称 (如 Billet Box, S61)">
-            <button class="apple-btn apple-btn-primary" id="btn-save-dev-name" style="width: 100%;">保存并绑定</button>
+            <h3 style="font-size: 17px; font-weight: 700;">发现新硬件设备</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);" id="naming-prompt-desc">检测到全新的 DNA 主板，请为其指定名称：</p>
+            <input type="text" id="input-dev-name" class="apple-input" placeholder="例如: Billet Box, S61">
+            <div style="display: flex; gap: 8px;">
+                <button class="apple-btn" style="flex:1;" id="btn-cancel-naming">稍后设置</button>
+                <button class="apple-btn apple-btn-primary" style="flex:2;" id="btn-save-dev-name">保存绑定</button>
+            </div>
         </div>
     </div>
 
@@ -707,7 +727,7 @@
         let dumpBuffer = [];
         let incomingCfgBuffer = [];
 
-        /* ================= 1. 极简单图标主题切换 (Auto -> Light -> Dark) ================= */
+        /* ================= 1. 单图标主题切换 ================= */
         const themeCycle = ['auto', 'light', 'dark'];
         let currentTheme = localStorage.getItem(K_THEME) || 'auto';
 
@@ -719,7 +739,6 @@
             localStorage.setItem(K_THEME, mode);
 
             if (mode === 'auto') {
-                const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 document.documentElement.setAttribute('data-theme', 'auto');
                 themeSvg.innerHTML = '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>';
                 themeBtn.setAttribute('title', '当前外观: 跟随系统');
@@ -743,7 +762,7 @@
         applyTheme(currentTheme);
         initDefaultAtos();
 
-        /* ================= 2. 标签页切换与左右滑动 ================= */
+        /* ================= 2. 标签页切换与滑动 ================= */
         const tabs = ['dash', 'devices', 'atos', 'settings'];
         let activeTabIdx = 0;
 
@@ -768,29 +787,6 @@
             if (target === 'atos') renderAtomizerLibrary();
         }
 
-        let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
-        window.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.apple-modal-overlay') || e.target.closest('input') || e.target.closest('select')) {
-                touchStartX = 0; touchStartY = 0; return;
-            }
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-
-        window.addEventListener('touchend', (e) => {
-            if (!touchStartX && !touchStartY) return;
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
-                if (deltaX < 0 && activeTabIdx < tabs.length - 1) switchView(tabs[activeTabIdx + 1]);
-                else if (deltaX > 0 && activeTabIdx > 0) switchView(tabs[activeTabIdx - 1]);
-            }
-            touchStartX = 0; touchStartY = 0;
-        }, { passive: true });
-
-        // 使用数据时间范围切换
         document.getElementById('filter-tabs-container').addEventListener('click', (e) => {
             const tab = e.target.closest('button');
             if (!tab) return;
@@ -915,6 +911,7 @@
             try {
                 const d = JSON.parse(raw);
 
+                // 接收 Flash 分片配置：采用增量合并，防止冲刷本地设备列表
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -923,12 +920,20 @@
                     if (idx === total - 1) {
                         try {
                             const parsed = JSON.parse(incomingCfgBuffer.join(''));
-                            if (parsed.reg) { registry = parsed.reg; saveData(K_REGISTRY, registry); }
-                            if (parsed.atos) { atomizers = parsed.atos; saveData(K_ATOS, atomizers); }
-                            if (parsed.map) { devAtoMap = parsed.map; saveData(K_DEV_ATO, devAtoMap); }
+                            if (parsed.reg) {
+                                registry = { ...parsed.reg, ...registry };
+                                saveData(K_REGISTRY, registry);
+                            }
+                            if (parsed.atos && atomizers.length <= 1) {
+                                atomizers = parsed.atos;
+                                saveData(K_ATOS, atomizers);
+                            }
+                            if (parsed.map) {
+                                devAtoMap = { ...parsed.map, ...devAtoMap };
+                                saveData(K_DEV_ATO, devAtoMap);
+                            }
                             renderDashboard();
                             renderDeviceLibrary();
-                            renderAtomizerLibrary();
                         } catch (err) {}
                     }
                     return;
@@ -938,7 +943,6 @@
                     isDumping = false;
                     mergeDumpBuffer(dumpBuffer);
                     dumpBuffer = [];
-                    alert('已从 ESP32 板载 Flash 成功同步历史底账！');
                     renderDashboard();
                     return;
                 }
@@ -949,12 +953,17 @@
                 }
 
                 const syncId = Number(d.sync || d.sync_id) || 0;
-                const chipId = d.id || d.chip_id || '';
-                const detectedModel = d.model || 'DNA';
+                const rawChipId = (d.chip_id || d.id || '').trim();
+                const detectedModel = d.model || 'DNA 60';
 
-                if (!chipId || chipId === 'UNKNOWN') {
+                // 核心修复：优先采用真实序列号
+                const chipId = (rawChipId && rawChipId !== 'UNKNOWN') ? rawChipId : `${detectedModel}_0412`;
+
+                if (d.battery !== undefined) updateBatteryUI(d.battery);
+
+                if (d.connected === false && syncId === 0) {
                     if (activeChipId) {
-                        document.getElementById('disp-dev-name').textContent = `${registry[activeChipId]?.name || 'DNA 设备'} (已拔出)`;
+                        document.getElementById('disp-dev-name').textContent = `${registry[activeChipId]?.name || detectedModel} (已拔出)`;
                     } else {
                         document.getElementById('disp-dev-name').textContent = '等待插入 DNA 主板...';
                     }
@@ -963,22 +972,36 @@
                     return;
                 }
 
-                // 提取并更新电量
-                if (d.battery !== undefined) updateBatteryUI(d.battery);
-
                 if (syncId === 0) return;
 
-                const last = Array.isArray(d.last) ? { t: d.last[0], w: d.last[1], e: d.last[2], c: d.last[3] } : d.last;
-                const mean = Array.isArray(d.mean) ? { w: d.mean[0], t: d.mean[1], e: d.mean[2] } : d.mean;
-                const dev = Array.isArray(d.dev) ? { p: d.dev[0], e: d.dev[1], t: d.dev[2] } : d.dev;
+                // 优雅解构与容错：休眠或零点火状态下各字段均安全置零
+                const rawLast = d.last || {};
+                const last = Array.isArray(rawLast)
+                    ? { t: rawLast[0] || 0, w: rawLast[1] || 0, e: rawLast[2] || 0, c: rawLast[3] || 0 }
+                    : { t: rawLast.t || 0, w: rawLast.w || 0, e: rawLast.e || 0, c: rawLast.c || 0 };
+
+                const rawMean = d.mean || {};
+                const mean = Array.isArray(rawMean)
+                    ? { w: rawMean[0] || 0, t: rawMean[1] || 0, e: rawMean[2] || 0 }
+                    : { w: rawMean.w || 0, t: rawMean.t || 0, e: rawMean.e || 0 };
+
+                const devP = d.dev ? (d.dev.p !== undefined ? d.dev.p : (d.dev.puffs !== undefined ? d.dev.puffs : d.puffs)) : d.puffs;
+                const devE = d.dev ? (d.dev.e || 0) : 0;
+                const devT = d.dev ? (d.dev.t || 0) : 0;
+                const dev = { p: devP, e: devE, t: devT };
 
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
                 lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, ts: recordTs };
 
+                // 核心修复：防重复打扰，已弹出时不反复创建弹窗
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
-                    document.getElementById('naming-prompt-desc').textContent = `检测到全新 [${detectedModel}] 芯片，请为其指定名称：`;
-                    document.getElementById('modal-naming').classList.add('active');
+                    const modal = document.getElementById('modal-naming');
+                    if (!modal.classList.contains('active')) {
+                        document.getElementById('naming-prompt-desc').textContent = `检测到全新 [${detectedModel}] 主板 (${chipId})，请为其指定名称：`;
+                        document.getElementById('input-dev-name').value = `${detectedModel} 主机`;
+                        modal.classList.add('active');
+                    }
                     return;
                 }
 
@@ -990,12 +1013,17 @@
                 }
 
                 processSyncRecord(lastLiveSnapshot);
-            } catch (e) {}
+            } catch (e) {
+                console.warn('解析异常:', raw, e);
+            }
         }
 
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
-            if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) return;
+            if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) {
+                renderDashboard();
+                return;
+            }
 
             const recTime = data.ts || Date.now();
             let deltaPuffs = 0, deltaEnergyWh = 0, deltaTimeSec = 0;
@@ -1007,10 +1035,10 @@
                 deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
                 if (lastDevRec.devTimeSec !== undefined && data.dev.t >= lastDevRec.devTimeSec) {
                     deltaTimeSec = Math.max(0, data.dev.t - lastDevRec.devTimeSec);
-                } else if (deltaPuffs === 1 && data.last && data.last.t) {
+                } else if (deltaPuffs === 1 && data.last && data.last.t > 0) {
                     deltaTimeSec = data.last.t;
                 }
-            } else if (deltaPuffs === 1 && data.last && data.last.t) {
+            } else if (deltaPuffs === 1 && data.last && data.last.t > 0) {
                 deltaTimeSec = data.last.t;
             }
 
@@ -1063,13 +1091,13 @@
             }
         }
 
-        /* ================= 5. 实时面板与本周 Canvas 折线走势图 ================= */
+        /* ================= 5. 实时面板与 Canvas 折线图 ================= */
         function renderDashboard() {
             if (activeChipId && registry[activeChipId]) {
                 document.getElementById('disp-dev-name').textContent = registry[activeChipId].name;
                 document.getElementById('btn-rename-dev').style.display = 'inline';
             } else {
-                document.getElementById('disp-dev-name').textContent = bleChar ? '等待插入 DNA 主板...' : '未连接设备';
+                document.getElementById('disp-dev-name').textContent = bleChar ? '已就绪 (等待点火数据)' : '未连接设备';
                 document.getElementById('btn-rename-dev').style.display = 'none';
             }
 
@@ -1091,6 +1119,24 @@
             if (curAto) {
                 document.getElementById('disp-coil-spec').textContent = `搭载: ${curAto.coil_spec || '默认线圈'}`;
                 document.getElementById('disp-coil-puffs').textContent = (Number(curAto.coil_puffs) || 0).toLocaleString();
+            }
+
+            // 安全渲染最近单口特征：休眠未击发时显示 '--'
+            if (lastLiveSnapshot && lastLiveSnapshot.last) {
+                const l = lastLiveSnapshot.last;
+                if (l.t > 0 || l.w > 0 || l.e > 0) {
+                    document.getElementById('rt-last-time').textContent = Number(l.t).toFixed(2);
+                    document.getElementById('rt-last-power').textContent = Number(l.w).toFixed(1);
+                    document.getElementById('rt-last-energy').textContent = Number(l.e).toFixed(2);
+                    document.getElementById('rt-last-temp').textContent = (l.c && l.c > 0) ? `${Math.round(l.c)}°F` : 'OFF';
+                    document.getElementById('disp-last-hint').textContent = '最近击发记录';
+                } else {
+                    document.getElementById('rt-last-time').textContent = '--';
+                    document.getElementById('rt-last-power').textContent = '--';
+                    document.getElementById('rt-last-energy').textContent = '--';
+                    document.getElementById('rt-last-temp').textContent = 'OFF';
+                    document.getElementById('disp-last-hint').textContent = '休眠已复位 (待点火)';
+                }
             }
 
             renderFilteredMetrics();
@@ -1118,7 +1164,6 @@
             else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
             document.getElementById('filter-rate').textContent = Math.round(totalPuffs / days);
 
-            // 控制本周折线图显示/隐藏
             const chartWrapper = document.getElementById('chart-card-wrapper');
             if (currentFilterRange === 'week') {
                 chartWrapper.style.display = 'flex';
@@ -1142,7 +1187,6 @@
             return { start, end };
         }
 
-        // Canvas 高清平滑折线走势图
         function drawWeekChart() {
             const canvas = document.getElementById('weekLineCanvas');
             if (!canvas) return;
@@ -1160,7 +1204,6 @@
             const h = rect.height;
             const padL = 28, padR = 16, padT = 20, padB = 26;
 
-            // 获取本周一至周日数据
             const weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
             const dayValues = [0, 0, 0, 0, 0, 0, 0];
 
@@ -1182,7 +1225,6 @@
 
             const maxVal = Math.max(...dayValues, 30);
 
-            // 清理与绘制背景网格线
             ctx.clearRect(0, 0, w, h);
             const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim();
             ctx.strokeStyle = gridColor;
@@ -1196,7 +1238,6 @@
                 ctx.stroke();
             }
 
-            // 计算各坐标点
             const points = dayValues.map((val, idx) => {
                 const x = padL + (w - padL - padR) * (idx / 6);
                 const y = h - padB - (val / maxVal) * (h - padT - padB);
@@ -1205,7 +1246,6 @@
 
             const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--apple-blue').trim();
 
-            // 绘制平滑渐变面积
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             points.forEach(p => ctx.lineTo(p.x, p.y));
@@ -1219,7 +1259,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // 绘制折线
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             points.forEach(p => ctx.lineTo(p.x, p.y));
@@ -1227,7 +1266,6 @@
             ctx.lineWidth = 2.2;
             ctx.stroke();
 
-            // 绘制节点及 X 轴文字
             const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
             ctx.font = '10px -apple-system, sans-serif';
             ctx.textAlign = 'center';
@@ -1247,7 +1285,7 @@
             });
         }
 
-        /* ================= 6. 设备档案视图 (展示具体型号) ================= */
+        /* ================= 6. 设备档案视图 ================= */
         function renderDeviceLibrary() {
             const container = document.getElementById('devices-list-container');
             const chipKeys = Object.keys(registry);
@@ -1265,7 +1303,7 @@
 
                 const latestRec = records[0];
                 const boardLifetimePuffs = latestRec ? Number(latestRec.devPuffs) || 0 : '--';
-                const modelBadge = dev.model || 'DNA';
+                const modelBadge = dev.model || 'DNA 60';
 
                 return `
                     <div class="asset-card ${isCurrent ? 'active-chip' : ''}">
@@ -1333,8 +1371,8 @@
         window.showLifetimeModal = function(chipId) {
             const dev = registry[chipId];
             const snap = dev?.lastSnapshot || lastLiveSnapshot;
-            if (!snap) { alert('暂无该设备的底层硬件快照数据'); return; }
-            document.getElementById('lt-model').textContent = dev.model || snap.model || 'DNA';
+            if (!snap) { return; }
+            document.getElementById('lt-model').textContent = dev.model || snap.model || 'DNA 60';
             document.getElementById('lt-chip-id').textContent = chipId;
             document.getElementById('lt-dev-puffs').textContent = `${(snap.dev?.p || snap.dev?.puffs || 0).toLocaleString()} 口`;
             document.getElementById('lt-dev-time').textContent = `${(snap.dev?.t || 0).toFixed(1)}s (约 ${(((snap.dev?.t || 0))/3600).toFixed(2)} 小时)`;
@@ -1410,7 +1448,7 @@
         };
 
         window.deleteAto = function(atoId) {
-            if (atomizers.length <= 1) { alert('系统中至少需要保留 1 个雾化器档案。'); return; }
+            if (atomizers.length <= 1) { return; }
             const ato = getAto(atoId);
             if (!ato) return;
             if (confirm(`确定要彻底删除雾化器【${ato.name}】吗？`)) {
@@ -1439,12 +1477,10 @@
             }
         };
 
-        /* ================= 8. “设置”面板功能 (固件升级 / 清除数据 / 备份导入) ================= */
-        // 板块 1: OTA 升级
+        /* ================= 8. “设置”面板功能 ================= */
         document.getElementById('btn-start-ota').addEventListener('click', async () => {
             const fileInput = document.getElementById('file-ota');
-            if (!fileInput.files.length) { alert('请先选择固件 (.bin) 文件！'); return; }
-            if (!bleChar) { alert('请先连接 ESP32 蓝牙！'); return; }
+            if (!fileInput.files.length || !bleChar) return;
 
             const file = fileInput.files[0];
             const buffer = await file.arrayBuffer();
@@ -1475,32 +1511,38 @@
                 await new Promise(r => setTimeout(r, 20));
             }
 
-            statusText.textContent = '固件上传完毕，硬件校验中...';
+            statusText.textContent = '固件上传完毕，硬件校验重启中...';
             await sendBleCommand({ cmd: "OTA_END" });
             pBar.style.width = '100%';
-            alert('固件推送完成！设备正在重启更新。');
         });
 
-        // 板块 2: 清除数据
         document.getElementById('btn-clear-current-records').addEventListener('click', () => {
-            if (!activeChipId) { alert('当前没有活跃连接的主机！'); return; }
+            if (!activeChipId) return;
             if (confirm(`确定清空当前设备【${registry[activeChipId]?.name || activeChipId}】的本地同步历史吗？`)) {
                 syncRecords = syncRecords.filter(r => r.chip_id !== activeChipId);
                 saveData(K_RECORDS, syncRecords);
                 renderDashboard();
-                alert('已清空当前设备历史。');
             }
         });
 
-        document.getElementById('btn-clear-all-data').addEventListener('click', () => {
+        // 原生平滑重置：彻底消除阻塞式强制刷新与弹窗
+        document.getElementById('btn-clear-all-data').addEventListener('click', async () => {
             if (confirm('警告：此操作将清空全部设备登记表、雾化器及所有历史数据，确定继续？')) {
+                if (bleChar) {
+                    await sendBleCommand({ cmd: "CLEAR_FLASH" });
+                }
                 localStorage.clear();
-                alert('全部本地数据已清空，页面将重新载入。');
-                location.reload();
+                registry = {};
+                atomizers = [];
+                syncRecords = [];
+                devAtoMap = {};
+                initDefaultAtos();
+                renderDashboard();
+                renderDeviceLibrary();
+                renderAtomizerLibrary();
             }
         });
 
-        // 板块 3: 备份与导入
         document.getElementById('btn-export-backup').addEventListener('click', () => {
             const dump = {
                 registry: registry,
@@ -1538,17 +1580,16 @@
                     saveData(K_DEV_ATO, devAtoMap);
 
                     pushSystemStateToHardware();
-                    alert('数据恢复成功！');
                     renderDashboard();
-                } catch (err) {
-                    alert('备份文件格式错误或已损坏！');
-                }
+                    renderDeviceLibrary();
+                    renderAtomizerLibrary();
+                } catch (err) {}
             };
             reader.readAsText(file);
         });
 
         document.getElementById('btn-dump-from-flash').addEventListener('click', () => {
-            if (!bleChar) { alert('请先通过蓝牙连接 ESP32 设备！'); return; }
+            if (!bleChar) return;
             isDumping = true; dumpBuffer = [];
             sendBleCommand({ cmd: "DUMP" });
         });
@@ -1595,7 +1636,7 @@
                             id: 'rec_' + trueTs + '_' + syncId,
                             sync_id: syncId,
                             chip_id: cid,
-                            model: item.model || 'DNA',
+                            model: item.model || 'DNA 60',
                             timestamp: trueTs,
                             timeStr: formatDate(new Date(trueTs)),
                             puffs: Number(item.puffs) || 0,
@@ -1614,7 +1655,7 @@
             saveData(K_RECORDS, syncRecords);
         }
 
-        /* ================= 9. 辅助交互 ================= */
+        /* ================= 9. 命名与换丝逻辑 ================= */
         document.getElementById('btn-reset-coil').addEventListener('click', () => {
             const currentAtoId = devAtoMap[activeChipId] || atomizers[0]?.id;
             const ato = getAto(currentAtoId);
@@ -1668,19 +1709,53 @@
             renderDashboard();
         });
 
+        // 核心修复：保存命名并彻底销毁弹窗
         document.getElementById('btn-save-dev-name').addEventListener('click', () => {
-            const name = document.getElementById('input-dev-name').value.trim() || 'DNA 设备';
+            const targetId = (pendingPayload && pendingPayload.chipId) ? pendingPayload.chipId : (activeChipId || lastLiveSnapshot?.chipId);
+            if (!targetId) {
+                document.getElementById('modal-naming').classList.remove('active');
+                return;
+            }
+
+            const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA 60';
+            const name = document.getElementById('input-dev-name').value.trim() || `${model} 主机`;
+
+            registry[targetId] = {
+                name: name,
+                model: model,
+                registered_at: Date.now(),
+                lastSnapshot: pendingPayload || lastLiveSnapshot
+            };
+
+            saveData(K_REGISTRY, registry);
+            pushSystemStateToHardware();
+
+            document.getElementById('modal-naming').classList.remove('active');
+            activeChipId = targetId;
+
             if (pendingPayload) {
-                registry[pendingPayload.chipId] = {
-                    name: name,
-                    model: pendingPayload.model || 'DNA',
+                processSyncRecord(pendingPayload);
+                pendingPayload = null;
+            } else {
+                renderDashboard();
+            }
+        });
+
+        document.getElementById('btn-cancel-naming').addEventListener('click', () => {
+            const targetId = (pendingPayload && pendingPayload.chipId) ? pendingPayload.chipId : (activeChipId || lastLiveSnapshot?.chipId);
+            if (targetId) {
+                const model = (pendingPayload && pendingPayload.model) ? pendingPayload.model : 'DNA 60';
+                registry[targetId] = {
+                    name: `${model} 主机`,
+                    model: model,
                     registered_at: Date.now(),
-                    lastSnapshot: pendingPayload
+                    lastSnapshot: pendingPayload || lastLiveSnapshot
                 };
                 saveData(K_REGISTRY, registry);
-                pushSystemStateToHardware();
-                document.getElementById('modal-naming').classList.remove('active');
-                activeChipId = pendingPayload.chipId;
+                activeChipId = targetId;
+            }
+            document.getElementById('modal-naming').classList.remove('active');
+            if (pendingPayload) {
                 processSyncRecord(pendingPayload);
                 pendingPayload = null;
             }
