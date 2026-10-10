@@ -450,6 +450,7 @@
 
         <!-- 视图 1: 实时面板 -->
         <main class="view-content" id="view-dashboard">
+            <!-- 1. 硬件核心底账卡片 -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Active Hardware</span>
@@ -489,33 +490,7 @@
                 <span class="action-link" id="btn-reassign">更改归属</span>
             </div>
 
-            <!-- 最近抽吸特征卡片（优雅处理休眠空数据） -->
-            <div class="apple-card">
-                <div class="hero-device-header">
-                    <span class="card-label-subtle">Last Puff Status</span>
-                    <span style="font-size: 11px; color: var(--text-secondary);" id="disp-last-hint">待机就绪</span>
-                </div>
-                <div class="metrics-grid">
-                    <div class="metric-cell">
-                        <div class="metric-cell-val" id="rt-last-time">--</div>
-                        <div class="metric-cell-label">单口时长 (s)</div>
-                    </div>
-                    <div class="metric-cell">
-                        <div class="metric-cell-val" id="rt-last-power">--</div>
-                        <div class="metric-cell-label">单口功率 (W)</div>
-                    </div>
-                    <div class="metric-cell">
-                        <div class="metric-cell-val" id="rt-last-energy">--</div>
-                        <div class="metric-cell-label">单口能耗 (mWh)</div>
-                    </div>
-                    <div class="metric-cell">
-                        <div class="metric-cell-val" id="rt-last-temp">OFF</div>
-                        <div class="metric-cell-label">发热丝温度</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 使用数据板块 -->
+            <!-- 2. 使用数据统计板块 (Usage Analytics) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Usage Analytics</span>
@@ -558,6 +533,33 @@
                 </div>
             </div>
 
+            <!-- 3. 最近抽吸特征卡片 (已调整放置在 Usage Analytics 之后) -->
+            <div class="apple-card">
+                <div class="hero-device-header">
+                    <span class="card-label-subtle">Last Puff Status</span>
+                    <span style="font-size: 11px; color: var(--text-secondary);" id="disp-last-hint">待机就绪</span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-time">--</div>
+                        <div class="metric-cell-label">单口时长 (s)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-power">--</div>
+                        <div class="metric-cell-label">单口功率 (W)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-energy">--</div>
+                        <div class="metric-cell-label">单口能耗 (mWh)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-cell-val" id="rt-last-temp">OFF</div>
+                        <div class="metric-cell-label">发热丝温度</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 时间线同步日志 (Activity Timeline) -->
             <div class="apple-card">
                 <div class="hero-device-header">
                     <span class="card-label-subtle">Activity Timeline</span>
@@ -569,7 +571,7 @@
             </div>
         </main>
 
-        <!-- 视图 2: 设备档案 (展示芯片具体 DNA 型号) -->
+        <!-- 视图 2: 设备档案 -->
         <main class="view-content hidden" id="view-devices">
             <div style="padding: 4px 6px;">
                 <h2 style="font-size: 20px; font-weight: 700;">已注册设备</h2>
@@ -589,7 +591,7 @@
             <div id="atomizers-list-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </main>
 
-        <!-- 视图 4: 设置 (固件升级、清除数据、数据备份与导入) -->
+        <!-- 视图 4: 设置 -->
         <main class="view-content hidden" id="view-settings">
             <!-- 板块 1: 固件升级 -->
             <div class="apple-card">
@@ -911,7 +913,7 @@
             try {
                 const d = JSON.parse(raw);
 
-                // 接收 Flash 分片配置：采用增量合并，防止冲刷本地设备列表
+                // 接收 Flash 分片配置：增量合并，防止冲刷本地设备列表
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -956,7 +958,7 @@
                 const rawChipId = (d.chip_id || d.id || '').trim();
                 const detectedModel = d.model || 'DNA 60';
 
-                // 核心修复：优先采用真实序列号
+                // 优先采用真实读取出的原厂序列号
                 const chipId = (rawChipId && rawChipId !== 'UNKNOWN') ? rawChipId : `${detectedModel}_0412`;
 
                 if (d.battery !== undefined) updateBatteryUI(d.battery);
@@ -974,7 +976,7 @@
 
                 if (syncId === 0) return;
 
-                // 优雅解构与容错：休眠或零点火状态下各字段均安全置零
+                // 优雅解构与容错：休眠或零点火状态下各字段安全置零
                 const rawLast = d.last || {};
                 const last = Array.isArray(rawLast)
                     ? { t: rawLast[0] || 0, w: rawLast[1] || 0, e: rawLast[2] || 0, c: rawLast[3] || 0 }
@@ -993,7 +995,7 @@
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
                 lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, ts: recordTs };
 
-                // 核心修复：防重复打扰，已弹出时不反复创建弹窗
+                // 防重复弹窗拦截器
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
                     const modal = document.getElementById('modal-naming');
@@ -1121,7 +1123,7 @@
                 document.getElementById('disp-coil-puffs').textContent = (Number(curAto.coil_puffs) || 0).toLocaleString();
             }
 
-            // 安全渲染最近单口特征：休眠未击发时显示 '--'
+            // 安全渲染最近单口特征：休眠未击发时安全显示为 '--'
             if (lastLiveSnapshot && lastLiveSnapshot.last) {
                 const l = lastLiveSnapshot.last;
                 if (l.t > 0 || l.w > 0 || l.e > 0) {
@@ -1525,7 +1527,6 @@
             }
         });
 
-        // 原生平滑重置：彻底消除阻塞式强制刷新与弹窗
         document.getElementById('btn-clear-all-data').addEventListener('click', async () => {
             if (confirm('警告：此操作将清空全部设备登记表、雾化器及所有历史数据，确定继续？')) {
                 if (bleChar) {
@@ -1709,7 +1710,6 @@
             renderDashboard();
         });
 
-        // 核心修复：保存命名并彻底销毁弹窗
         document.getElementById('btn-save-dev-name').addEventListener('click', () => {
             const targetId = (pendingPayload && pendingPayload.chipId) ? pendingPayload.chipId : (activeChipId || lastLiveSnapshot?.chipId);
             if (!targetId) {
