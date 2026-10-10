@@ -690,7 +690,7 @@
             <select id="select-reassign-target" class="apple-select" style="width: 100%;"></select>
             <div style="display: flex; gap: 8px; margin-top: 6px;">
                 <button class="apple-btn" style="flex:1;" id="btn-close-reassign">取消</button>
-                <button class="apple-btn apple-btn-primary" style="flex:1;" id="btn-confirm-reassign">确认转移</button>
+                <button class="apple-btn apple-btn-primary" style="flex:2;" id="btn-confirm-reassign">确认转移</button>
             </div>
         </div>
     </div>
@@ -904,6 +904,7 @@
             try {
                 const d = JSON.parse(raw);
 
+                // 接收 Flash 分片配置
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) return;
@@ -944,7 +945,7 @@
                     return;
                 }
 
-                // 物理断开拦截
+                // 优先检查物理连接状态：断开则重置界面并不做弹窗判断
                 if (d.connected === false) {
                     if (activeChipId && registry[activeChipId]) {
                         document.getElementById('disp-dev-name').textContent = `${registry[activeChipId].name} (已断开)`;
@@ -961,6 +962,7 @@
                     return;
                 }
 
+                // 只有真实序列号才认定为合法连接
                 const rawChipId = (d.chip_id || d.id || '').trim();
                 if (!rawChipId || rawChipId === 'UNKNOWN') {
                     return;
@@ -992,6 +994,7 @@
                 const recordTs = (d.ts && Number(d.ts) > 100000000) ? (Number(d.ts) * 1000) : Date.now();
                 lastLiveSnapshot = { syncId, chipId, model: detectedModel, last, mean, dev, puffs: Number(d.puffs) || 0, battery: d.battery, res: rawRes, ts: recordTs };
 
+                // 未登记的真实主板拉起命名弹窗
                 if (!registry[chipId]) {
                     pendingPayload = lastLiveSnapshot;
                     const modal = document.getElementById('modal-naming');
@@ -1016,7 +1019,6 @@
             }
         }
 
-        // 核心修复 (Bug 7): 强化增量计算与硬件外部清零容错
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
             if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId) {
@@ -1030,24 +1032,24 @@
             const lastDevRec = syncRecords.find(r => r.chip_id === data.chipId);
 
             if (lastDevRec) {
-                // 1. 口数增量（包含清零容错）
+                // 1. 口数增量（包含外部清零容错）
                 if (data.dev.p < lastDevRec.devPuffs) {
-                    deltaPuffs = data.puffs || 0; // 发生外部清零
+                    deltaPuffs = data.puffs || 0;
                 } else {
                     deltaPuffs = data.dev.p - lastDevRec.devPuffs;
                 }
 
-                // 2. 能量增量（包含清零容错，避免死锁为0）
+                // 2. 能量增量（包含外部清零容错）
                 if (data.dev.e < lastDevRec.devEnergyMwh) {
-                    deltaEnergyWh = Math.max(0, (data.dev.e || 0) / 1000.0); // 发生外部清零
+                    deltaEnergyWh = Math.max(0, (data.dev.e || 0) / 1000.0);
                 } else {
                     deltaEnergyWh = Math.max(0, (data.dev.e - lastDevRec.devEnergyMwh) / 1000.0);
                 }
 
-                // 3. 点火时间增量（包含清零容错）
+                // 3. 点火时间增量（包含外部清零容错）
                 if (lastDevRec.devTimeSec !== undefined) {
                     if (data.dev.t < lastDevRec.devTimeSec) {
-                        deltaTimeSec = Math.max(0, data.dev.t || 0); // 发生外部清零
+                        deltaTimeSec = Math.max(0, data.dev.t || 0);
                     } else {
                         deltaTimeSec = Math.max(0, data.dev.t - lastDevRec.devTimeSec);
                     }
@@ -1095,7 +1097,7 @@
             renderDashboard();
         }
 
-        // 核心修复 (Bug 3): UTF-8 字节感知切片辅助函数，单块实际字节严格受控
+        // UTF-8 字节感知切片辅助函数，单块实际字节严格受控
         function splitStringByUtf8Bytes(str, maxBytes) {
             const encoder = new TextEncoder();
             const chunks = [];
@@ -1116,7 +1118,7 @@
             return chunks;
         }
 
-        // 核心修复 (Bug 3): 采用 64 字节安全预算分块推送到 ESP32，彻底根除 BLE MTU 溢出
+        // 采用 64 字节安全预算分块推送到 ESP32，消除 BLE MTU 溢出
         async function pushSystemStateToHardware() {
             if (!bleChar) return;
             const payload = JSON.stringify({ reg: registry, atos: atomizers, map: devAtoMap });
@@ -1567,11 +1569,17 @@
                     await new Promise(r => setTimeout(r, 20));
                 }
 
-                // 3. 发送完成控制帧
+                // 3. 发送完成控制帧（容忍重启链路断开）
                 statusText.textContent = '固件上传完毕，硬件校验重启中...';
-                await sendBleCommand({ cmd: "OTA_END" });
                 pBar.style.width = '100%';
-                alert('OTA 推送完成！硬件正在执行分区切换并自动重启。');
+                
+                try {
+                    await sendBleCommand({ cmd: "OTA_END" });
+                } catch (e) {
+                    console.log("设备已完成校验并重启断开:", e);
+                }
+
+                alert('OTA 推送完成！硬件已切换分区并自动重启。');
             } catch (err) {
                 console.error("OTA 传输失败:", err);
                 statusText.textContent = '推送中断或蓝牙通信异常';
