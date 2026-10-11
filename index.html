@@ -719,6 +719,7 @@
         let isDumping = false;
         let dumpBuffer = [];
         let incomingCfgBuffer = [];
+        let isConfigSyncing = false; // 【新增】配置同步指令锁
 
         /* ================= 1. 单图标主题切换 ================= */
         const themeCycle = ['auto', 'light', 'dark'];
@@ -863,6 +864,7 @@
                 bleChar = null;
                 activeChipId = null;
                 updateBatteryUI(null);
+                isConfigSyncing = false; // 重置锁
                 renderDashboard();
             });
 
@@ -883,18 +885,26 @@
                 });
             } catch (err) {}
 
-            try {
-                const initVal = await bleChar.readValue();
-                handleIncomingPayload(new TextDecoder().decode(initVal));
-            } catch (e) {}
-
+            // 【修复】启用指令锁，优先拉取硬件的配置，避免旧配置覆盖新口数
+            isConfigSyncing = true;
             const unixSec = Math.floor(Date.now() / 1000);
             await sendBleCommand({ cmd: "TIME", ts: unixSec });
             await sendBleCommand({ cmd: "GET_CFG" });
 
+            // 兜底解锁，并在配置拉取后才首次读取当前点火口数
+            setTimeout(async () => {
+                isConfigSyncing = false;
+                if (bleChar && device.gatt.connected) {
+                    try {
+                        const initVal = await bleChar.readValue();
+                        handleIncomingPayload(new TextDecoder().decode(initVal));
+                    } catch (e) {}
+                }
+            }, 1000);
+
             let isPolling = false;
             setInterval(async () => {
-                if (bleChar && device.gatt.connected && !isPolling && !isDumping) {
+                if (bleChar && device.gatt.connected && !isPolling && !isDumping && !isConfigSyncing) {
                     isPolling = true;
                     try {
                         const v = await bleChar.readValue();
@@ -937,7 +947,7 @@
 
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
-                    if (total === 0) return;
+                    if (total === 0) { isConfigSyncing = false; return; }
                     if (idx === 0) incomingCfgBuffer = [];
                     incomingCfgBuffer.push(content);
                     if (idx === total - 1) {
@@ -947,7 +957,8 @@
                                 registry = { ...parsed.reg, ...registry };
                                 saveData(K_REGISTRY, registry);
                             }
-                            if (parsed.atos && atomizers.length <= 1) {
+                            // 修复：仅在前端无有效数据时才使用旧配置覆盖，保护新口数不被冲刷
+                            if (parsed.atos && atomizers.length <= 1 && (!atomizers[0] || atomizers[0].total_puffs === 0)) {
                                 atomizers = parsed.atos;
                                 saveData(K_ATOS, atomizers);
                             }
@@ -958,20 +969,13 @@
                             renderDashboard();
                             renderDeviceLibrary();
                         } catch (err) {}
+                        isConfigSyncing = false;
                     }
                     return;
                 }
 
-                if (d.dump === "END") {
-                    isDumping = false;
-                    mergeDumpBuffer(dumpBuffer);
-                    dumpBuffer = [];
-                    renderDashboard();
-                    return;
-                }
-
-                if (isDumping) {
-                    if (d.id || d.chip_id) dumpBuffer.push(d);
+                if (isDumping || isConfigSyncing) {
+                    if (isDumping && (d.id || d.chip_id)) dumpBuffer.push(d);
                     return;
                 }
 
@@ -1044,7 +1048,6 @@
             }
         }
 
-        // 核心修复：防抖穿透与增量计算
         function processSyncRecord(data) {
             const lastRec = syncRecords.length > 0 ? syncRecords[0] : null;
             if (lastRec && lastRec.sync_id === data.syncId && lastRec.chip_id === data.chipId && lastRec.devPuffs === data.dev.p) {
