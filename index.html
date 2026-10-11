@@ -719,7 +719,22 @@
         let isDumping = false;
         let dumpBuffer = [];
         let incomingCfgBuffer = [];
-        let isConfigSyncing = false; // 【新增】配置同步指令锁
+        let isConfigSyncing = false; 
+
+        // 【修复 Bug #3】引入全局看门狗续签机制
+        let configSyncTimer = null; 
+        function resetConfigSyncTimer(device) {
+            if (configSyncTimer) clearTimeout(configSyncTimer);
+            configSyncTimer = setTimeout(async () => {
+                isConfigSyncing = false;
+                if (bleChar && device && device.gatt.connected) {
+                    try {
+                        const initVal = await bleChar.readValue();
+                        handleIncomingPayload(new TextDecoder().decode(initVal));
+                    } catch (e) {}
+                }
+            }, 5000); // 宽容度延长至 5 秒
+        }
 
         /* ================= 1. 单图标主题切换 ================= */
         const themeCycle = ['auto', 'light', 'dark'];
@@ -864,7 +879,7 @@
                 bleChar = null;
                 activeChipId = null;
                 updateBatteryUI(null);
-                isConfigSyncing = false; // 重置锁
+                isConfigSyncing = false;
                 renderDashboard();
             });
 
@@ -885,22 +900,12 @@
                 });
             } catch (err) {}
 
-            // 【修复】启用指令锁，优先拉取硬件的配置，避免旧配置覆盖新口数
             isConfigSyncing = true;
             const unixSec = Math.floor(Date.now() / 1000);
             await sendBleCommand({ cmd: "TIME", ts: unixSec });
             await sendBleCommand({ cmd: "GET_CFG" });
 
-            // 兜底解锁，并在配置拉取后才首次读取当前点火口数
-            setTimeout(async () => {
-                isConfigSyncing = false;
-                if (bleChar && device.gatt.connected) {
-                    try {
-                        const initVal = await bleChar.readValue();
-                        handleIncomingPayload(new TextDecoder().decode(initVal));
-                    } catch (e) {}
-                }
-            }, 1000);
+            resetConfigSyncTimer(device);
 
             let isPolling = false;
             setInterval(async () => {
@@ -948,6 +953,9 @@
                 if (d.cfg_c) {
                     const [idx, total, content] = d.cfg_c;
                     if (total === 0) { isConfigSyncing = false; return; }
+                    
+                    resetConfigSyncTimer(); // 每次分片到达续命看门狗
+
                     if (idx === 0) incomingCfgBuffer = [];
                     incomingCfgBuffer.push(content);
                     if (idx === total - 1) {
@@ -957,7 +965,6 @@
                                 registry = { ...parsed.reg, ...registry };
                                 saveData(K_REGISTRY, registry);
                             }
-                            // 修复：仅在前端无有效数据时才使用旧配置覆盖，保护新口数不被冲刷
                             if (parsed.atos && atomizers.length <= 1 && (!atomizers[0] || atomizers[0].total_puffs === 0)) {
                                 atomizers = parsed.atos;
                                 saveData(K_ATOS, atomizers);
@@ -970,6 +977,7 @@
                             renderDeviceLibrary();
                         } catch (err) {}
                         isConfigSyncing = false;
+                        if (configSyncTimer) clearTimeout(configSyncTimer);
                     }
                     return;
                 }
