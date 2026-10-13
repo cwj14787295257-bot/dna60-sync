@@ -507,7 +507,7 @@
                     </div>
                     <div class="metric-cell">
                         <div class="metric-cell-val" id="filter-rate">--</div>
-                        <div class="metric-cell-label">日均频次 (口/天)</div>
+                        <div class="metric-cell-label" id="filter-rate-label">日均频次 (口/天)</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-cell-val" id="filter-avg-power">--</div>
@@ -1239,11 +1239,23 @@
             const avgTimeStr = (totalPuffs > 0 && totalTimeSec > 0) ? (totalTimeSec / totalPuffs).toFixed(2) : '--';
             document.getElementById('filter-avg-time').textContent = avgTimeStr;
 
-            const now = new Date();
-            let days = 1;
-            if (currentFilterRange === 'week') days = Math.max(1, now.getDay() === 0 ? 7 : now.getDay());
-            else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
-            document.getElementById('filter-rate').textContent = Math.round(totalPuffs / days);
+            const rateVal = document.getElementById('filter-rate');
+            const rateLabel = document.getElementById('filter-rate-label');
+            
+            if (currentFilterRange === 'day') {
+                rateLabel.textContent = '今日时间 (S)';
+                rateVal.textContent = totalTimeSec.toFixed(1);
+            } else if (currentFilterRange === 'all') {
+                rateLabel.textContent = '总时间 (S)';
+                rateVal.textContent = totalTimeSec.toFixed(1);
+            } else {
+                rateLabel.textContent = '日均频次 (口/天)';
+                const now = new Date();
+                let days = 1;
+                if (currentFilterRange === 'week') days = Math.max(1, now.getDay() === 0 ? 7 : now.getDay());
+                else if (currentFilterRange === 'month') days = Math.max(1, now.getDate());
+                rateVal.textContent = Math.round(totalPuffs / days);
+            }
 
             const avgPowerStr = (totalTimeSec > 0 && totalEnergyWh > 0)
                 ? ((totalEnergyWh * 3600) / totalTimeSec).toFixed(1)
@@ -1736,7 +1748,6 @@
                         saveData(K_REGISTRY, registry);
                     }
 
-                    // 【修复新发现 #2】：对齐实时逻辑，容错硬件口数重置引发的漏算
                     let dP = 0, dE = 0, dT = 0;
                     if (index > 0) {
                         dP = (devP < prevPuffs) ? (Number(item.puffs) || 0) : (devP - prevPuffs);
