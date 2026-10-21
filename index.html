@@ -1743,7 +1743,7 @@
                             lastSnapshot: null
                         };
                         saveData(K_REGISTRY, registry);
-                    } else if (item.model && (!registry[cid].model || registry[cid].model === 'DNA 60' || registry[cid].model === 'DNA')) {
+                    } else if (item.model && item.model !== 'DNA' && registry[cid].model !== item.model) {
                         registry[cid].model = item.model;
                         saveData(K_REGISTRY, registry);
                     }
